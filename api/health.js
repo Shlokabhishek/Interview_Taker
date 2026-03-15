@@ -1,4 +1,5 @@
 const { setCors, sendJson } = require('./_utils.cjs');
+const { kvEnabled } = require('./_store.cjs');
 
 module.exports = async (req, res) => {
   setCors(req, res);
@@ -7,6 +8,5 @@ module.exports = async (req, res) => {
     res.end();
     return;
   }
-  sendJson(res, 200, { ok: true });
+  sendJson(res, 200, { ok: true, kv: kvEnabled() });
 };
-

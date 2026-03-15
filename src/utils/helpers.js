@@ -109,10 +109,10 @@ export const getApiBaseUrl = () => {
     const envBase = import.meta?.env?.VITE_API_BASE_URL;
     const storedBase = storage.get('apiBaseUrl');
     const raw = (envBase || storedBase || '').trim();
-    if (!raw) return '/api';
+    if (!raw) return import.meta?.env?.PROD ? '/api' : '';
     return raw.endsWith('/') ? raw.slice(0, -1) : raw;
   } catch (e) {
-    return '/api';
+    return import.meta?.env?.PROD ? '/api' : '';
   }
 };
 

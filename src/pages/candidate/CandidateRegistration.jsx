@@ -20,7 +20,7 @@ import {
   Alert,
   Loading
 } from '../../components/shared';
-import { isValidEmail } from '../../utils/helpers';
+import { getApiBaseUrl, isValidEmail } from '../../utils/helpers';
 import { checkMediaSupport } from '../../utils/mediaUtils';
 
 const CandidateRegistration = () => {
@@ -39,6 +39,8 @@ const CandidateRegistration = () => {
   const [errors, setErrors] = useState({});
   const [mediaSupport, setMediaSupport] = useState({ hasVideo: false, hasAudio: false });
   const [submitting, setSubmitting] = useState(false);
+  const [apiHealth, setApiHealth] = useState(null);
+  const [apiHealthError, setApiHealthError] = useState('');
 
   // Load session
   useEffect(() => {
@@ -51,6 +53,24 @@ const CandidateRegistration = () => {
     };
     loadSession();
   }, [link, fetchSessionByLink]);
+
+  useEffect(() => {
+    if (loading || session) return;
+
+    const apiBase = getApiBaseUrl();
+    if (!apiBase) return;
+
+    fetch(`${apiBase}/health`)
+      .then((r) => r.json())
+      .then((json) => {
+        setApiHealth(json);
+        setApiHealthError('');
+      })
+      .catch((e) => {
+        setApiHealth(null);
+        setApiHealthError(e?.message || 'API health check failed');
+      });
+  }, [loading, session]);
 
   // Check media support
   useEffect(() => {
@@ -152,6 +172,23 @@ const CandidateRegistration = () => {
                 This interview link is invalid, expired, or the session is not available on this device.
                 If you're using a deployed link, make sure the backend is configured so sessions can be fetched across devices.
               </p>
+              {(apiHealth || apiHealthError) && (
+                <div className="text-left bg-gray-50 border border-gray-200 rounded-lg p-3 mb-6">
+                  <p className="text-xs font-medium text-gray-700 mb-1">Diagnostics</p>
+                  <p className="text-xs text-gray-600">API base: {getApiBaseUrl() || '(disabled)'}</p>
+                  {apiHealth && (
+                    <p className="text-xs text-gray-600">API health: ok={String(apiHealth.ok)} kv={String(apiHealth.kv)}</p>
+                  )}
+                  {apiHealth?.ok && apiHealth?.kv === false && (
+                    <p className="text-xs text-yellow-700 mt-1">
+                      Backend storage is not configured. Enable Vercel KV and redeploy, then create the session again.
+                    </p>
+                  )}
+                  {apiHealthError && (
+                    <p className="text-xs text-red-600">API health error: {apiHealthError}</p>
+                  )}
+                </div>
+              )}
               <Button variant="primary" onClick={() => navigate('/')}>
                 Go to Homepage
               </Button>

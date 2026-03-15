@@ -48,6 +48,36 @@ export const InterviewProvider = ({ children }) => {
     refreshSessions();
   }, [user?.id]);
 
+  // Sync existing localStorage data to backend (helps old sessions/links work on other devices)
+  useEffect(() => {
+    const apiBaseUrl = getApiBaseUrl();
+    if (!apiBaseUrl) return;
+
+    try {
+      const localCandidates = storage.get('allCandidates') || [];
+      if (Array.isArray(localCandidates)) {
+        localCandidates.forEach((c) => {
+          if (c?.id) {
+            apiFetchJson('/candidates', { method: 'POST', body: JSON.stringify(c) }).catch(() => {});
+          }
+        });
+      }
+    } catch (e) {}
+
+    if (user?.id) {
+      try {
+        const localSessions = storage.get(`sessions_${user.id}`) || [];
+        if (Array.isArray(localSessions)) {
+          localSessions.forEach((s) => {
+            if (s?.id) {
+              apiFetchJson('/sessions', { method: 'POST', body: JSON.stringify(s) }).catch(() => {});
+            }
+          });
+        }
+      } catch (e) {}
+    }
+  }, [user?.id]);
+
   // Sync across tabs/windows (localStorage "storage" event only fires in other tabs)
   useEffect(() => {
     const onStorage = (event) => {

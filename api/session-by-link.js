@@ -1,5 +1,5 @@
 const { setCors, sendJson } = require('./_utils.cjs');
-const { getSessionByLink, kvEnabled } = require('./_store.cjs');
+const { getSessionByLink } = require('./_store.cjs');
 
 module.exports = async (req, res) => {
   setCors(req, res);
@@ -7,10 +7,6 @@ module.exports = async (req, res) => {
     res.statusCode = 204;
     res.end();
     return;
-  }
-
-  if (!kvEnabled()) {
-    // Still works in-memory, but not persistent across cold starts.
   }
 
   if (req.method !== 'GET') {

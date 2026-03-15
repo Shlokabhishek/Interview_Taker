@@ -15,8 +15,8 @@ const readBodyJson = async (req) => {
 const sendJson = (res, status, obj) => {
   res.statusCode = status;
   res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Cache-Control', 'no-store');
   res.end(JSON.stringify(obj));
 };
 
 module.exports = { setCors, readBodyJson, sendJson };
-
