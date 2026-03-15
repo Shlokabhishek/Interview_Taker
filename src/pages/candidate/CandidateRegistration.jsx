@@ -26,7 +26,7 @@ import { checkMediaSupport } from '../../utils/mediaUtils';
 const CandidateRegistration = () => {
   const { link } = useParams();
   const navigate = useNavigate();
-  const { getSessionByLink, addCandidate } = useInterview();
+  const { fetchSessionByLink, addCandidate } = useInterview();
   
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -43,14 +43,14 @@ const CandidateRegistration = () => {
   // Load session
   useEffect(() => {
     const loadSession = async () => {
-      const foundSession = getSessionByLink(link);
+      const foundSession = await fetchSessionByLink(link);
       if (foundSession) {
         setSession(foundSession);
       }
       setLoading(false);
     };
     loadSession();
-  }, [link, getSessionByLink]);
+  }, [link, fetchSessionByLink]);
 
   // Check media support
   useEffect(() => {
@@ -116,8 +116,12 @@ const CandidateRegistration = () => {
         status: 'registered',
       });
 
+      try {
+        localStorage.setItem(`lastCandidateId_${link}`, candidate.id);
+      } catch (e) {}
+
       // Navigate to interview room
-      navigate(`/interview/${link}/room`, { 
+      navigate(`/interview/${link}/room?candidate=${candidate.id}`, {
         state: { candidateId: candidate.id } 
       });
     } catch (error) {

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Search, 
   Filter,
@@ -30,14 +30,19 @@ import { getScoreColor, getScoreGrade, formatDate } from '../../utils/helpers';
 import { generateInterviewSummary, rankCandidates } from '../../utils/aiAnalysis';
 
 const Candidates = () => {
-  const { candidates, sessions } = useInterview();
+  const { candidates, sessions, refreshCandidates } = useInterview();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [sessionFilter, setSessionFilter] = useState('all');
+  const [candidateStatusFilter, setCandidateStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState('score');
   const [sortOrder, setSortOrder] = useState('desc');
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
+
+  useEffect(() => {
+    refreshCandidates?.();
+  }, [refreshCandidates]);
 
   const selectedCandidateComputed = useMemo(() => {
     if (!selectedCandidate) return null;
@@ -66,14 +71,18 @@ const Candidates = () => {
       .trim();
   };
 
-  // Get completed candidates
   const completedCandidates = useMemo(() => {
     return candidates.filter(c => c.status === 'completed');
   }, [candidates]);
 
+  const visibleCandidatesByStatus = useMemo(() => {
+    if (candidateStatusFilter === 'all') return candidates;
+    return candidates.filter(c => c.status === candidateStatusFilter);
+  }, [candidates, candidateStatusFilter]);
+
   // Filter and sort candidates
   const filteredCandidates = useMemo(() => {
-    let result = completedCandidates.filter(candidate => {
+    let result = visibleCandidatesByStatus.filter(candidate => {
       const matchesSearch = 
         candidate.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         candidate.email?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -100,13 +109,28 @@ const Candidates = () => {
       return sortOrder === 'desc' ? -comparison : comparison;
     });
 
-    return rankCandidates(result);
-  }, [completedCandidates, searchQuery, sessionFilter, sortBy, sortOrder]);
+    // Only rank candidates that have completed scores
+    const completed = result.filter(c => c.status === 'completed');
+    const ranked = rankCandidates(completed);
+    const rankMap = new Map(ranked.map(c => [c.id, c.rank]));
+
+    return result.map(c => ({
+      ...c,
+      rank: rankMap.get(c.id),
+    }));
+  }, [visibleCandidatesByStatus, searchQuery, sessionFilter, sortBy, sortOrder]);
 
   // Session options for filter
   const sessionOptions = [
     { value: 'all', label: 'All Sessions' },
     ...sessions.map(s => ({ value: s.id, label: s.title })),
+  ];
+
+  const statusOptions = [
+    { value: 'completed', label: 'Completed' },
+    { value: 'registered', label: 'Registered' },
+    { value: 'in_progress', label: 'In Progress' },
+    { value: 'all', label: 'All Statuses' },
   ];
 
   // Calculate stats
@@ -139,10 +163,23 @@ const Candidates = () => {
   };
 
   const getRankBadge = (rank) => {
-    if (rank === 1) return <Badge variant="warning" className="bg-yellow-400 text-yellow-900">🥇 1st</Badge>;
-    if (rank === 2) return <Badge variant="default" className="bg-gray-300 text-gray-700">🥈 2nd</Badge>;
-    if (rank === 3) return <Badge variant="default" className="bg-orange-300 text-orange-800">🥉 3rd</Badge>;
+    if (rank === 1) return <Badge variant="warning" className="bg-yellow-400 text-yellow-900">1st</Badge>;
+    if (rank === 2) return <Badge variant="default" className="bg-gray-300 text-gray-700">2nd</Badge>;
+    if (rank === 3) return <Badge variant="default" className="bg-orange-300 text-orange-800">3rd</Badge>;
     return <Badge variant="default">#{rank}</Badge>;
+  };
+
+  const exportResults = () => {
+    const data = filteredCandidates;
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'candidate_results.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -153,7 +190,7 @@ const Candidates = () => {
           <h1 className="text-2xl font-bold text-gray-900">Candidates</h1>
           <p className="text-gray-600 mt-1">Review and compare candidate performance.</p>
         </div>
-        <Button variant="secondary" icon={Download}>
+        <Button variant="secondary" icon={Download} onClick={exportResults} disabled={filteredCandidates.length === 0}>
           Export Results
         </Button>
       </div>
@@ -223,6 +260,12 @@ const Candidates = () => {
             options={sessionOptions}
             className="w-48"
           />
+          <Select
+            value={candidateStatusFilter}
+            onChange={(e) => setCandidateStatusFilter(e.target.value)}
+            options={statusOptions}
+            className="w-48"
+          />
         </div>
       </Card>
 
@@ -272,7 +315,7 @@ const Candidates = () => {
                   return (
                     <tr key={candidate.id} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="py-4 px-4">
-                        {getRankBadge(candidate.rank)}
+                        {candidate.rank ? getRankBadge(candidate.rank) : <Badge variant="default">-</Badge>}
                       </td>
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-3">
@@ -292,20 +335,30 @@ const Candidates = () => {
                       </td>
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-3">
-                          <Progress value={candidate.overallScore || 0} size="sm" className="w-20" />
-                          <span className={`font-medium ${getScoreColor(candidate.overallScore || 0).split(' ')[0]}`}>
-                            {candidate.overallScore || 0}%
-                          </span>
+                          {candidate.status === 'completed' ? (
+                            <>
+                              <Progress value={candidate.overallScore || 0} size="sm" className="w-20" />
+                              <span className={`font-medium ${getScoreColor(candidate.overallScore || 0).split(' ')[0]}`}>
+                                {candidate.overallScore || 0}%
+                              </span>
+                            </>
+                          ) : (
+                            <Badge variant="warning">{candidate.status}</Badge>
+                          )}
                         </div>
                       </td>
                       <td className="py-4 px-4">
-                        <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full font-bold ${getScoreColor(candidate.overallScore || 0)}`}>
-                          {getScoreGrade(candidate.overallScore || 0)}
-                        </span>
+                        {candidate.status === 'completed' ? (
+                          <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full font-bold ${getScoreColor(candidate.overallScore || 0)}`}>
+                            {getScoreGrade(candidate.overallScore || 0)}
+                          </span>
+                        ) : (
+                          <span className="text-sm text-gray-500">-</span>
+                        )}
                       </td>
                       <td className="py-4 px-4">
                         <p className="text-sm text-gray-500">
-                          {candidate.completedAt ? formatDate(candidate.completedAt) : '-'}
+                          {candidate.completedAt ? formatDate(candidate.completedAt) : candidate.registeredAt ? formatDate(candidate.registeredAt) : '-'}
                         </p>
                       </td>
                       <td className="py-4 px-4 text-right">
@@ -326,6 +379,16 @@ const Candidates = () => {
                   <td colSpan={7} className="py-12 text-center">
                     <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                     <p className="text-gray-500">No candidates found</p>
+                    {candidates.length > 0 && completedCandidates.length === 0 && (
+                      <p className="text-sm text-gray-400 mt-2">
+                        {candidates.length} candidate(s) are registered, but none are marked completed yet.
+                      </p>
+                    )}
+                    {candidates.length === 0 && (
+                      <p className="text-sm text-gray-400 mt-2">
+                        This demo stores data in this browser only. Make sure the interview was taken on the same host and browser profile (not incognito).
+                      </p>
+                    )}
                   </td>
                 </tr>
               )}

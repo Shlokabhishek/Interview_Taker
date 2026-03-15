@@ -24,6 +24,7 @@ import {
   Input,
   Alert
 } from '../../components/shared';
+import { storage } from '../../utils/helpers';
 
 const Settings = () => {
   const { user, updateProfile, logout } = useAuth();
@@ -42,6 +43,8 @@ const Settings = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
+  const [publicBaseUrl, setPublicBaseUrl] = useState(storage.get('publicBaseUrl') || '');
+  const [apiBaseUrl, setApiBaseUrl] = useState(storage.get('apiBaseUrl') || '');
 
   const handleProfileChange = (field, value) => {
     setProfileData(prev => ({ ...prev, [field]: value }));
@@ -53,6 +56,8 @@ const Settings = () => {
 
   const saveProfile = () => {
     updateProfile(profileData);
+    storage.set('publicBaseUrl', publicBaseUrl.trim());
+    storage.set('apiBaseUrl', apiBaseUrl.trim());
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
@@ -139,6 +144,24 @@ const Settings = () => {
               onChange={(e) => handleProfileChange('company', e.target.value)}
               icon={Building}
             />
+
+            <div className="grid sm:grid-cols-2 gap-6">
+              <Input
+                label="Public Base URL (Share Links)"
+                placeholder="https://192.168.1.10:3001"
+                value={publicBaseUrl}
+                onChange={(e) => setPublicBaseUrl(e.target.value)}
+              />
+              <Input
+                label="Backend API URL (Optional)"
+                placeholder="http://192.168.1.10:8787"
+                value={apiBaseUrl}
+                onChange={(e) => setApiBaseUrl(e.target.value)}
+              />
+            </div>
+            <p className="text-xs text-gray-500 -mt-3">
+              Use Public Base URL to generate interview links with your LAN IP instead of localhost.
+            </p>
 
             {/* Avatar Training Section */}
             <div className="border-t pt-6">

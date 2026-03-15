@@ -52,7 +52,24 @@ npm install
 npm run dev
 ```
 
-4. Open [http://localhost:5173](http://localhost:5173) in your browser
+4. Open `https://localhost:3001` in your browser
+
+### Optional Backend (Cross-Device Results)
+
+By default this project stores sessions and candidates in browser `localStorage`, which means the interviewer will only see candidates from the same browser profile and exact origin (same protocol, host, and port).
+
+To make sessions/candidates available across devices, run the included lightweight backend:
+
+```bash
+npm run dev:backend
+```
+
+Then set the backend URL in the app:
+- Go to `Interviewer -> Settings`
+- Set `Backend API URL (Optional)` to `http://<your-ip>:8787`
+
+For sharing interview links on LAN, set:
+- `Public Base URL (Share Links)` to `https://<your-ip>:3001` (or your deployed domain)
 
 ### Demo Credentials
 

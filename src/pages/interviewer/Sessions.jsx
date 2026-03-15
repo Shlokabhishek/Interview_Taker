@@ -25,7 +25,7 @@ import {
   ModalFooter,
   Alert 
 } from '../../components/shared';
-import { formatDate } from '../../utils/helpers';
+import { formatDate, getPublicBaseUrl } from '../../utils/helpers';
 
 const Sessions = () => {
   const navigate = useNavigate();
@@ -45,7 +45,7 @@ const Sessions = () => {
   }).reverse();
 
   const handleCopyLink = (session) => {
-    const link = `${window.location.origin}/interview/${session.link}`;
+    const link = `${getPublicBaseUrl()}/interview/${session.link}`;
     navigator.clipboard.writeText(link);
     setCopiedLink(session.id);
     setTimeout(() => setCopiedLink(null), 2000);
@@ -187,14 +187,14 @@ const Sessions = () => {
 
                 {session.status === 'active' && (
                   <div className="px-6 py-3 bg-green-50 border-t border-green-100 flex items-center justify-between">
-                    <span className="text-sm text-green-700">
-                      Interview link: {window.location.origin}/interview/{session.link}
+                    <span className="text-sm text-green-700 break-all">
+                      Interview link: {getPublicBaseUrl()}/interview/{session.link}
                     </span>
                     <Button
                       variant="ghost"
                       size="sm"
                       icon={ExternalLink}
-                      onClick={() => window.open(`/interview/${session.link}`, '_blank')}
+                      onClick={() => window.open(`${getPublicBaseUrl()}/interview/${session.link}`, '_blank')}
                     >
                       Open
                     </Button>

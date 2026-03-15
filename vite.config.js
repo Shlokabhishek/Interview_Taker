@@ -25,7 +25,8 @@ export default defineConfig({
   },
   server: {
     host: true, // Listen on all network interfaces (0.0.0.0)
-    port: 3000,
+    port: 3001,
+    strictPort: true,
     https: true, // Enable HTTPS for camera access
     open: true,
   },

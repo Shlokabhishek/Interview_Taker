@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { 
   ChevronRight,
@@ -28,7 +28,7 @@ const InterviewRoom = () => {
   const { link } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const { getSessionByLink, updateCandidate, candidates } = useInterview();
+  const { fetchSessionByLink, updateCandidate, candidates } = useInterview();
   
   const [session, setSession] = useState(null);
   const [candidate, setCandidate] = useState(null);
@@ -50,22 +50,50 @@ const InterviewRoom = () => {
   const recognitionRef = useRef(null);
   const recordingRef = useRef(null);
 
+  const candidateId = useMemo(() => {
+    const params = new URLSearchParams(location.search || '');
+    const fromQuery = params.get('candidate');
+    const fromState = location.state?.candidateId;
+    if (fromQuery) return fromQuery;
+    if (fromState) return fromState;
+    try {
+      return localStorage.getItem(`lastCandidateId_${link}`);
+    } catch (e) {
+      return null;
+    }
+  }, [link, location.search, location.state]);
+
   // Load session and candidate
   useEffect(() => {
-    const candidateId = location.state?.candidateId;
-    const foundSession = getSessionByLink(link);
-    
-    if (foundSession) {
-      setSession(foundSession);
-      
-      const foundCandidate = candidates.find(c => c.id === candidateId);
-      if (foundCandidate) {
-        setCandidate(foundCandidate);
+    let cancelled = false;
+
+    (async () => {
+      const foundSession = await fetchSessionByLink(link);
+      if (cancelled) return;
+
+      if (foundSession) {
+        setSession(foundSession);
+
+        const foundCandidate = candidates.find(c => c.id === candidateId);
+        if (foundCandidate) {
+          setCandidate(foundCandidate);
+        } else {
+          // Fallback when InterviewContext hasn't loaded yet or after refresh
+          try {
+            const stored = JSON.parse(localStorage.getItem('allCandidates') || '[]');
+            const storedCandidate = stored.find(c => c.id === candidateId);
+            if (storedCandidate) setCandidate(storedCandidate);
+          } catch (e) {}
+        }
       }
-    }
-    
-    setLoading(false);
-  }, [link, location.state, getSessionByLink, candidates]);
+
+      setLoading(false);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [link, candidateId, fetchSessionByLink, candidates]);
 
   // Initialize speech recognition
   useEffect(() => {
@@ -215,13 +243,26 @@ const InterviewRoom = () => {
 
     // Update candidate
     if (candidate) {
-      updateCandidate(candidate.id, {
+      const completedUpdate = {
         status: 'completed',
         completedAt: new Date().toISOString(),
         responses: allResponses,
         analysis: summary,
         overallScore,
-      });
+      };
+
+      updateCandidate(candidate.id, completedUpdate);
+
+      // Ensure persistence even if navigation happens immediately after completion.
+      try {
+        const stored = JSON.parse(localStorage.getItem('allCandidates') || '[]');
+        if (Array.isArray(stored)) {
+          const updated = stored.map((c) =>
+            c?.id === candidate.id ? { ...c, ...completedUpdate } : c
+          );
+          localStorage.setItem('allCandidates', JSON.stringify(updated));
+        }
+      } catch (e) {}
     }
 
     // Speak closing message

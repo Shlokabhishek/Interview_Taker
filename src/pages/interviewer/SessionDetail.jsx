@@ -30,7 +30,7 @@ import {
   Alert,
   Progress
 } from '../../components/shared';
-import { formatDate, getScoreColor, QUESTION_TYPE_LABELS, QUESTION_TYPE_COLORS } from '../../utils/helpers';
+import { formatDate, getPublicBaseUrl, getScoreColor, QUESTION_TYPE_LABELS, QUESTION_TYPE_COLORS } from '../../utils/helpers';
 
 const SessionDetail = () => {
   const { id } = useParams();
@@ -72,7 +72,7 @@ const SessionDetail = () => {
   }
 
   const handleCopyLink = () => {
-    const link = `${window.location.origin}/interview/${session.link}`;
+    const link = `${getPublicBaseUrl()}/interview/${session.link}`;
     navigator.clipboard.writeText(link);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);
@@ -198,7 +198,7 @@ const SessionDetail = () => {
         <Alert
           type="success"
           title="Interview Link"
-          message={`Share this link with candidates: ${window.location.origin}/interview/${session.link}`}
+          message={`Share this link with candidates: ${getPublicBaseUrl()}/interview/${session.link}`}
         />
       )}
 

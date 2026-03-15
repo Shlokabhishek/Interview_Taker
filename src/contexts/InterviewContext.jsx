@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { storage, generateId, generateInterviewLink } from '../utils/helpers';
+import { storage, generateId, generateInterviewLink, getApiBaseUrl } from '../utils/helpers';
 import { useAuth } from './AuthContext';
+import { apiFetchJson } from '../utils/apiClient';
 
 const InterviewContext = createContext(null);
 
@@ -11,34 +12,79 @@ export const InterviewProvider = ({ children }) => {
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  const refreshCandidates = useCallback(() => {
+    const apiBaseUrl = getApiBaseUrl();
+    if (!apiBaseUrl) {
+      setCandidates(storage.get('allCandidates') || []);
+      return;
+    }
+
+    apiFetchJson('/candidates')
+      .then((remote) => setCandidates(Array.isArray(remote) ? remote : []))
+      .catch(() => setCandidates(storage.get('allCandidates') || []));
+  }, []);
+
+  const refreshSessions = useCallback(() => {
+    if (!user?.id) return;
+
+    const apiBaseUrl = getApiBaseUrl();
+    if (!apiBaseUrl) {
+      setSessions(storage.get(`sessions_${user.id}`) || []);
+      return;
+    }
+
+    apiFetchJson(`/sessions?interviewerId=${encodeURIComponent(user.id)}`)
+      .then((remote) => setSessions(Array.isArray(remote) ? remote : []))
+      .catch(() => setSessions(storage.get(`sessions_${user.id}`) || []));
+  }, [user?.id]);
+
   // Load candidates from storage (used by both candidate and interviewer flows)
   useEffect(() => {
-    const storedCandidates = storage.get('allCandidates') || [];
-    setCandidates(storedCandidates);
+    refreshCandidates();
   }, []);
 
   // Load sessions from storage (interviewer-only)
   useEffect(() => {
-    if (!user?.id) return;
-    const storedSessions = storage.get(`sessions_${user.id}`) || [];
-    setSessions(storedSessions);
+    refreshSessions();
   }, [user?.id]);
 
   // Sync across tabs/windows (localStorage "storage" event only fires in other tabs)
   useEffect(() => {
     const onStorage = (event) => {
       if (event.key === 'allCandidates') {
-        setCandidates(storage.get('allCandidates') || []);
+        refreshCandidates();
       }
 
       if (user?.id && event.key === `sessions_${user.id}`) {
-        setSessions(storage.get(`sessions_${user.id}`) || []);
+        refreshSessions();
       }
     };
 
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
   }, [user?.id]);
+
+  // When returning to a tab, reload from storage in case we missed updates
+  useEffect(() => {
+    const onFocus = () => {
+      refreshCandidates();
+      refreshSessions();
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refreshCandidates();
+        refreshSessions();
+      }
+    };
+
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [refreshCandidates, refreshSessions]);
 
   // Save sessions to storage
   const saveSessions = useCallback((newSessions) => {
@@ -71,6 +117,11 @@ export const InterviewProvider = ({ children }) => {
       ...sessionData,
     };
 
+    const apiBaseUrl = getApiBaseUrl();
+    if (apiBaseUrl) {
+      apiFetchJson('/sessions', { method: 'POST', body: JSON.stringify(newSession) }).catch(() => {});
+    }
+
     const updatedSessions = [...sessions, newSession];
     saveSessions(updatedSessions);
     return newSession;
@@ -78,6 +129,11 @@ export const InterviewProvider = ({ children }) => {
 
   // Update session
   const updateSession = useCallback((sessionId, updates) => {
+    const apiBaseUrl = getApiBaseUrl();
+    if (apiBaseUrl) {
+      apiFetchJson(`/sessions/${encodeURIComponent(sessionId)}`, { method: 'PATCH', body: JSON.stringify(updates) }).catch(() => {});
+    }
+
     const updatedSessions = sessions.map(session => 
       session.id === sessionId 
         ? { ...session, ...updates, updatedAt: new Date().toISOString() }
@@ -92,6 +148,11 @@ export const InterviewProvider = ({ children }) => {
 
   // Delete session
   const deleteSession = useCallback((sessionId) => {
+    const apiBaseUrl = getApiBaseUrl();
+    if (apiBaseUrl) {
+      apiFetchJson(`/sessions/${encodeURIComponent(sessionId)}`, { method: 'DELETE' }).catch(() => {});
+    }
+
     const updatedSessions = sessions.filter(s => s.id !== sessionId);
     saveSessions(updatedSessions);
     
@@ -158,6 +219,22 @@ export const InterviewProvider = ({ children }) => {
 
   // Get session by link
   const getSessionByLink = useCallback((link) => {
+    const apiBaseUrl = getApiBaseUrl();
+    if (apiBaseUrl) {
+      // Async fetch isn't compatible with the existing call sites; return best-effort cache.
+      // Candidate pages use this synchronously, so we keep local search and refresh in background.
+      apiFetchJson(`/sessions/by-link/${encodeURIComponent(link)}`)
+        .then((remote) => {
+          if (remote?.id) {
+            setSessions((prev) => {
+              const exists = prev.some((s) => s.id === remote.id);
+              return exists ? prev.map((s) => (s.id === remote.id ? remote : s)) : [...prev, remote];
+            });
+          }
+        })
+        .catch(() => {});
+    }
+
     // Search in all sessions across all users
     const allSessionsKeys = Object.keys(localStorage).filter(key => 
       key.startsWith('sessions_')
@@ -172,6 +249,22 @@ export const InterviewProvider = ({ children }) => {
     return null;
   }, []);
 
+  const fetchSessionByLink = useCallback(async (link) => {
+    const apiBaseUrl = getApiBaseUrl();
+    if (apiBaseUrl) {
+      const remote = await apiFetchJson(`/sessions/by-link/${encodeURIComponent(link)}`);
+      if (remote?.id) {
+        setSessions((prev) => {
+          const exists = prev.some((s) => s.id === remote.id);
+          return exists ? prev.map((s) => (s.id === remote.id ? remote : s)) : [...prev, remote];
+        });
+      }
+      return remote || null;
+    }
+
+    return getSessionByLink(link);
+  }, [getSessionByLink]);
+
   // Add candidate to session
   const addCandidate = useCallback((candidateData) => {
     const newCandidate = {
@@ -184,6 +277,11 @@ export const InterviewProvider = ({ children }) => {
       ...candidateData,
     };
 
+    const apiBaseUrl = getApiBaseUrl();
+    if (apiBaseUrl) {
+      apiFetchJson('/candidates', { method: 'POST', body: JSON.stringify(newCandidate) }).catch(() => {});
+    }
+
     setCandidates((prev) => {
       const updatedCandidates = [...prev, newCandidate];
       storage.set('allCandidates', updatedCandidates);
@@ -195,6 +293,11 @@ export const InterviewProvider = ({ children }) => {
 
   // Update candidate
   const updateCandidate = useCallback((candidateId, updates) => {
+    const apiBaseUrl = getApiBaseUrl();
+    if (apiBaseUrl) {
+      apiFetchJson(`/candidates/${encodeURIComponent(candidateId)}`, { method: 'PATCH', body: JSON.stringify(updates) }).catch(() => {});
+    }
+
     setCandidates((prev) => {
       const updatedCandidates = prev.map(c =>
         c.id === candidateId ? { ...c, ...updates } : c
@@ -229,6 +332,8 @@ export const InterviewProvider = ({ children }) => {
     currentSession,
     candidates,
     loading,
+    refreshCandidates,
+    refreshSessions,
     setCurrentSession,
     createSession,
     updateSession,
@@ -238,6 +343,7 @@ export const InterviewProvider = ({ children }) => {
     deleteQuestion,
     reorderQuestions,
     getSessionByLink,
+    fetchSessionByLink,
     addCandidate,
     updateCandidate,
     getCandidatesForSession,

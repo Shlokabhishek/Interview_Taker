@@ -91,6 +91,31 @@ export const storage = {
   },
 };
 
+// Public base URL for share links (useful when running on LAN IP instead of localhost)
+export const getPublicBaseUrl = () => {
+  try {
+    const envBase = import.meta?.env?.VITE_PUBLIC_BASE_URL;
+    const storedBase = storage.get('publicBaseUrl');
+    const raw = (envBase || storedBase || window.location.origin || '').trim();
+    return raw.endsWith('/') ? raw.slice(0, -1) : raw;
+  } catch (e) {
+    return '';
+  }
+};
+
+// Optional backend API base URL (when you run a server so candidates work across devices)
+export const getApiBaseUrl = () => {
+  try {
+    const envBase = import.meta?.env?.VITE_API_BASE_URL;
+    const storedBase = storage.get('apiBaseUrl');
+    const raw = (envBase || storedBase || '').trim();
+    if (!raw) return '';
+    return raw.endsWith('/') ? raw.slice(0, -1) : raw;
+  } catch (e) {
+    return '';
+  }
+};
+
 // Question types
 export const QUESTION_TYPES = {
   TECHNICAL: 'technical',

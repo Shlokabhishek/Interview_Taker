@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   ArrowRight, 
@@ -12,8 +12,34 @@ import {
   Check
 } from 'lucide-react';
 import { Button } from '../../components/shared';
+import { useInterview } from '../../contexts/InterviewContext';
 
 const LandingPage = () => {
+  const { candidates } = useInterview();
+  const [questionCount, setQuestionCount] = useState(0);
+
+  const candidateCount = useMemo(() => {
+    return (candidates || []).length;
+  }, [candidates]);
+
+  useEffect(() => {
+    // Landing page can be visited while logged out; compute from any stored sessions.
+    try {
+      const keys = Object.keys(localStorage).filter(k => k.startsWith('sessions_'));
+      let total = 0;
+      keys.forEach((k) => {
+        const sessions = JSON.parse(localStorage.getItem(k) || '[]');
+        if (Array.isArray(sessions)) {
+          sessions.forEach((s) => {
+            total += (s?.questions?.length || 0);
+          });
+        }
+      });
+      setQuestionCount(total);
+    } catch (e) {
+      setQuestionCount(0);
+    }
+  }, []);
   const features = [
     {
       icon: Brain,
@@ -144,7 +170,7 @@ const LandingPage = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">AI Interview in Progress</h3>
-                    <p className="text-sm text-gray-500">3 candidates • 12 questions</p>
+                    <p className="text-sm text-gray-500">{candidateCount} candidates • {questionCount} questions</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-4">
