@@ -27,7 +27,7 @@ import {
   ModalFooter
 } from '../../components/shared';
 import { getScoreColor, getScoreGrade, formatDate } from '../../utils/helpers';
-import { rankCandidates } from '../../utils/aiAnalysis';
+import { generateInterviewSummary, rankCandidates } from '../../utils/aiAnalysis';
 
 const Candidates = () => {
   const { candidates, sessions } = useInterview();
@@ -38,6 +38,33 @@ const Candidates = () => {
   const [sortOrder, setSortOrder] = useState('desc');
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
+
+  const selectedCandidateComputed = useMemo(() => {
+    if (!selectedCandidate) return null;
+
+    const hasStoredSummary = Boolean(selectedCandidate.analysis) && Number.isFinite(selectedCandidate.overallScore);
+    if (hasStoredSummary) return selectedCandidate;
+
+    const analysisResults = (selectedCandidate.responses || [])
+      .map(r => r?.analysis)
+      .filter(Boolean);
+
+    if (analysisResults.length === 0) return selectedCandidate;
+
+    const summary = generateInterviewSummary(analysisResults);
+    const overallScore = Math.round(
+      analysisResults.reduce((sum, a) => sum + (a.overallScore || 0), 0) / analysisResults.length
+    );
+
+    return { ...selectedCandidate, analysis: summary, overallScore };
+  }, [selectedCandidate]);
+
+  const formatSkillName = (skill) => {
+    return String(skill)
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/^./, (c) => c.toUpperCase())
+      .trim();
+  };
 
   // Get completed candidates
   const completedCandidates = useMemo(() => {
@@ -314,40 +341,40 @@ const Candidates = () => {
         title="Candidate Details"
         size="lg"
       >
-        {selectedCandidate && (
+        {selectedCandidateComputed && (
           <div className="space-y-6">
             {/* Header */}
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center">
                 <span className="text-primary-700 font-bold text-2xl">
-                  {selectedCandidate.name?.charAt(0).toUpperCase()}
+                  {selectedCandidateComputed.name?.charAt(0).toUpperCase()}
                 </span>
               </div>
               <div>
-                <h3 className="text-xl font-semibold text-gray-900">{selectedCandidate.name}</h3>
-                <p className="text-gray-500">{selectedCandidate.email}</p>
+                <h3 className="text-xl font-semibold text-gray-900">{selectedCandidateComputed.name}</h3>
+                <p className="text-gray-500">{selectedCandidateComputed.email}</p>
               </div>
               <div className="ml-auto">
-                {getRankBadge(selectedCandidate.rank)}
+                {getRankBadge(selectedCandidateComputed.rank)}
               </div>
             </div>
 
             {/* Score Overview */}
             <div className="grid grid-cols-4 gap-4">
               <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-3xl font-bold text-gray-900">{selectedCandidate.overallScore || 0}%</p>
+                <p className="text-3xl font-bold text-gray-900">{selectedCandidateComputed.overallScore || 0}%</p>
                 <p className="text-sm text-gray-500">Overall Score</p>
               </div>
               <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-3xl font-bold text-gray-900">{selectedCandidate.analysis?.averageRelevance || 0}%</p>
+                <p className="text-3xl font-bold text-gray-900">{selectedCandidateComputed.analysis?.averageRelevance || 0}%</p>
                 <p className="text-sm text-gray-500">Relevance</p>
               </div>
               <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-3xl font-bold text-gray-900">{selectedCandidate.analysis?.averageAccuracy || 0}%</p>
+                <p className="text-3xl font-bold text-gray-900">{selectedCandidateComputed.analysis?.averageAccuracy || 0}%</p>
                 <p className="text-sm text-gray-500">Accuracy</p>
               </div>
               <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-3xl font-bold text-gray-900">{selectedCandidate.analysis?.averageConfidence || 0}%</p>
+                <p className="text-3xl font-bold text-gray-900">{selectedCandidateComputed.analysis?.averageConfidence || 0}%</p>
                 <p className="text-sm text-gray-500">Confidence</p>
               </div>
             </div>
@@ -357,7 +384,7 @@ const Candidates = () => {
               <div className="p-4 bg-green-50 rounded-lg">
                 <h4 className="font-medium text-green-800 mb-2">Strengths</h4>
                 <ul className="space-y-1">
-                  {(selectedCandidate.analysis?.topStrengths || ['Good communication', 'Clear responses']).map((strength, i) => (
+                  {(selectedCandidateComputed.analysis?.topStrengths || ['Good communication', 'Clear responses']).map((strength, i) => (
                     <li key={i} className="text-sm text-green-700 flex items-center gap-2">
                       <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />
                       {strength}
@@ -368,7 +395,7 @@ const Candidates = () => {
               <div className="p-4 bg-orange-50 rounded-lg">
                 <h4 className="font-medium text-orange-800 mb-2">Areas for Improvement</h4>
                 <ul className="space-y-1">
-                  {(selectedCandidate.analysis?.topImprovements || ['Could provide more details']).map((improvement, i) => (
+                  {(selectedCandidateComputed.analysis?.topImprovements || ['Could provide more details']).map((improvement, i) => (
                     <li key={i} className="text-sm text-orange-700 flex items-center gap-2">
                       <span className="w-1.5 h-1.5 bg-orange-500 rounded-full" />
                       {improvement}
@@ -377,6 +404,87 @@ const Candidates = () => {
                 </ul>
               </div>
             </div>
+
+            {/* Skills Summary */}
+            {selectedCandidateComputed.analysis?.skillsSummary && (
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <h4 className="font-medium text-gray-900 mb-3">Skills Summary</h4>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {Object.entries(selectedCandidateComputed.analysis.skillsSummary).map(([skill, score]) => (
+                    <div key={skill} className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium text-gray-700">{formatSkillName(skill)}</p>
+                        <p className="text-sm text-gray-600">{score}%</p>
+                      </div>
+                      <Progress value={score} size="sm" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Question-by-question breakdown */}
+            {Array.isArray(selectedCandidateComputed.responses) && selectedCandidateComputed.responses.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="font-medium text-gray-900">Question-wise Evaluation</h4>
+                <div className="space-y-2">
+                  {selectedCandidateComputed.responses.map((r, idx) => {
+                    const a = r?.analysis || {};
+                    const score = a.overallScore ?? 0;
+                    return (
+                      <details key={r?.questionId || idx} className="group rounded-lg border border-gray-200 bg-white">
+                        <summary className="cursor-pointer list-none p-4 flex items-center justify-between">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              Q{idx + 1}: {r?.questionText || 'Question'}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              Relevance {a.relevance ?? 0}% · Accuracy {a.accuracy ?? 0}% · Confidence {a.confidence ?? 0}%
+                            </p>
+                          </div>
+                          <div className={`shrink-0 ml-4 px-3 py-1 rounded-full text-sm font-medium ${getScoreColor(score)}`}>
+                            {score}%
+                          </div>
+                        </summary>
+                        <div className="px-4 pb-4 space-y-3">
+                          <div>
+                            <p className="text-xs font-medium text-gray-500 mb-1">Answer (transcribed)</p>
+                            <p className="text-sm text-gray-800 whitespace-pre-wrap">
+                              {r?.answer || '-'}
+                            </p>
+                          </div>
+                          {Array.isArray(a.keywordMatch?.matched) && a.keywordMatch.matched.length > 0 && (
+                            <div>
+                              <p className="text-xs font-medium text-gray-500 mb-2">Matched Keywords</p>
+                              <div className="flex flex-wrap gap-2">
+                                {a.keywordMatch.matched.slice(0, 12).map((kw) => (
+                                  <Badge key={kw} variant="default" className="bg-gray-100 text-gray-700">
+                                    {kw}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {(Array.isArray(a.improvements) && a.improvements.length > 0) && (
+                            <div>
+                              <p className="text-xs font-medium text-gray-500 mb-1">Improvement Hints</p>
+                              <ul className="text-sm text-gray-700 space-y-1">
+                                {a.improvements.map((tip, i) => (
+                                  <li key={i} className="flex items-start gap-2">
+                                    <span className="mt-2 w-1.5 h-1.5 bg-gray-400 rounded-full" />
+                                    <span>{tip}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      </details>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
         <ModalFooter>

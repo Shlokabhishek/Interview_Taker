@@ -207,9 +207,11 @@ const InterviewRoom = () => {
     const summary = generateInterviewSummary(analysisResults);
     
     // Calculate overall score
-    const overallScore = Math.round(
-      analysisResults.reduce((sum, a) => sum + (a.overallScore || 0), 0) / analysisResults.length
-    );
+    const overallScore = analysisResults.length > 0
+      ? Math.round(
+          analysisResults.reduce((sum, a) => sum + (a.overallScore || 0), 0) / analysisResults.length
+        )
+      : 0;
 
     // Update candidate
     if (candidate) {
@@ -226,7 +228,15 @@ const InterviewRoom = () => {
     speakText("Thank you for completing this interview. Your responses have been recorded and will be reviewed by the hiring team. We'll be in touch soon. Good luck!", () => {
       setIsAISpeaking(false);
     });
-  }, [candidate, updateCandidate]);
+
+    // Persist and show results screen (avoids looking like it "redirected to sign in")
+    if (candidate?.id) {
+      try {
+        localStorage.setItem(`lastCandidateId_${link}`, candidate.id);
+      } catch (e) {}
+      navigate(`/interview/${link}/complete?candidate=${candidate.id}`, { replace: true });
+    }
+  }, [candidate, link, navigate, updateCandidate]);
 
   // Skip to next question
   const skipQuestion = useCallback(() => {
@@ -292,12 +302,14 @@ const InterviewRoom = () => {
               <Card className="h-full bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700">
                 <div className="p-6 flex flex-col items-center justify-center h-full">
                   <AIAvatar
+                    avatarVideo={session.avatarConfig?.avatarVideo || null}
                     avatarImage={session.avatarConfig?.avatarImage || session.avatarImage}
-                    avatarName={session.interviewerName || 'AI Interviewer'}
+                    avatarName={session.avatarConfig?.avatarName || session.interviewerName || 'AI Interviewer'}
                     text={phase === 'question' ? currentQuestion?.text : null}
-                    autoSpeak={false}
+                    autoSpeak={phase === 'question'}
                     showControls={false}
                     size="lg"
+                    onSpeechEnd={() => setIsAISpeaking(false)}
                   />
                   
                   {isAISpeaking && (

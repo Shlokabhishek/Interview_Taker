@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   User, 
   Mail, 
@@ -9,7 +10,9 @@ import {
   Trash2,
   Save,
   Eye,
-  EyeOff
+  EyeOff,
+  Sparkles,
+  ArrowRight
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
@@ -136,6 +139,35 @@ const Settings = () => {
               onChange={(e) => handleProfileChange('company', e.target.value)}
               icon={Building}
             />
+
+            {/* Avatar Training Section */}
+            <div className="border-t pt-6">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-900 mb-1">AI Interviewer Avatar</h3>
+                  <p className="text-sm text-gray-600">
+                    {user?.avatarTrained 
+                      ? 'Your AI avatar has been trained and is ready to use.'
+                      : 'Train an AI avatar with your face and voice to conduct interviews.'
+                    }
+                  </p>
+                  {user?.avatarConfig?.trainedAt && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Trained on {new Date(user.avatarConfig.trainedAt).toLocaleDateString()}
+                    </p>
+                  )}
+                </div>
+                <Link to="/interviewer/avatar-training">
+                  <Button 
+                    variant={user?.avatarTrained ? "secondary" : "primary"} 
+                    icon={user?.avatarTrained ? ArrowRight : Sparkles}
+                    size="sm"
+                  >
+                    {user?.avatarTrained ? 'Manage' : 'Train Avatar'}
+                  </Button>
+                </Link>
+              </div>
+            </div>
 
             <div className="flex justify-end">
               <Button variant="primary" icon={Save} onClick={saveProfile}>

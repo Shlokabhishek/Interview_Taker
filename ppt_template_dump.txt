@@ -1,0 +1,54 @@
+slides 9
+--- Slide 1 ---
+INNOVATE BHARAT HACKATHON 2026
+TRACKS:  | AI & Intelligent Systems (AIIS) | Web app and software Innovation (WASI) | Cybersecurity and Block Chain (CSBC) | Data Science and Smart Analysis (DSSA) | Social Impact and Smart India Solutions (SISIS) | School Student Innovation (SCHII)
+1
+--- Slide 2 ---
+Title of Your Project
+Team Name: ABC | Team ID:  (Sample)
+2
+Team Members: | 1. | 2.
+--- Slide 3 ---
+Problem Statement
+3 W
+Problem Statement
+3
+--- Slide 4 ---
+Proposed Solution / Idea
+4
+Problem Statement
+4 W
+Proposed Solution/Idea
+4
+--- Slide 5 ---
+Proposed Solution / Idea
+5
+Problem Statement
+5 W
+Innovation & Uniqueness
+5
+--- Slide 6 ---
+Proposed Solution / Idea
+6
+Problem Statement
+6 W
+Technology Used
+6
+--- Slide 7 ---
+Proposed Solution / Idea
+7
+Problem Statement
+7 W
+Features & Functionalities
+7
+--- Slide 8 ---
+Proposed Solution / Idea
+8
+Problem Statement
+8 W
+Implementation Plan / Roadmap
+8
+--- Slide 9 ---
+Guidelines
+9
+Participants must use the official PPT template provided by the organizing committee for idea submission. | The presentation should be clear, well-structured, and limited to the recommended number of slides mentioned in the template. | Teams must ensure that all required sections are properly included in the presentation. | The content of the PPT must be original and created by the team members. Any form of plagiarism may lead to disqualification. | Use readable fonts, proper headings, and relevant visuals (charts, diagrams, flowcharts) to explain the idea effectively. | The PPT file should be submitted in .pptx or .pdf format using the prescribed file naming convention (TeamName_ProjectTitle). | Teams must ensure that all information provided in the presentation is accurate and relevant to the selected hackathon theme.

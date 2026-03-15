@@ -166,11 +166,7 @@ const CreateSession = () => {
     const session = createSession({
       ...sessionData,
       status: 'draft',
-      avatarImage: user?.avatarImage || null,
-      avatarConfig: user?.avatarTrained ? {
-        avatarImage: user?.avatarImage,
-        trained: true,
-      } : null,
+      avatarConfig: user?.avatarConfig || null,
     });
 
     navigate(`/interviewer/sessions/${session.id}`);

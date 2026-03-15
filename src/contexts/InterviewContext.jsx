@@ -11,15 +11,33 @@ export const InterviewProvider = ({ children }) => {
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Load sessions from storage
+  // Load candidates from storage (used by both candidate and interviewer flows)
   useEffect(() => {
-    if (user?.id) {
-      const storedSessions = storage.get(`sessions_${user.id}`) || [];
-      setSessions(storedSessions);
-      
-      const storedCandidates = storage.get('allCandidates') || [];
-      setCandidates(storedCandidates);
-    }
+    const storedCandidates = storage.get('allCandidates') || [];
+    setCandidates(storedCandidates);
+  }, []);
+
+  // Load sessions from storage (interviewer-only)
+  useEffect(() => {
+    if (!user?.id) return;
+    const storedSessions = storage.get(`sessions_${user.id}`) || [];
+    setSessions(storedSessions);
+  }, [user?.id]);
+
+  // Sync across tabs/windows (localStorage "storage" event only fires in other tabs)
+  useEffect(() => {
+    const onStorage = (event) => {
+      if (event.key === 'allCandidates') {
+        setCandidates(storage.get('allCandidates') || []);
+      }
+
+      if (user?.id && event.key === `sessions_${user.id}`) {
+        setSessions(storage.get(`sessions_${user.id}`) || []);
+      }
+    };
+
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
   }, [user?.id]);
 
   // Save sessions to storage
@@ -166,21 +184,25 @@ export const InterviewProvider = ({ children }) => {
       ...candidateData,
     };
 
-    const updatedCandidates = [...candidates, newCandidate];
-    setCandidates(updatedCandidates);
-    storage.set('allCandidates', updatedCandidates);
+    setCandidates((prev) => {
+      const updatedCandidates = [...prev, newCandidate];
+      storage.set('allCandidates', updatedCandidates);
+      return updatedCandidates;
+    });
 
     return newCandidate;
-  }, [candidates]);
+  }, []);
 
   // Update candidate
   const updateCandidate = useCallback((candidateId, updates) => {
-    const updatedCandidates = candidates.map(c =>
-      c.id === candidateId ? { ...c, ...updates } : c
-    );
-    setCandidates(updatedCandidates);
-    storage.set('allCandidates', updatedCandidates);
-  }, [candidates]);
+    setCandidates((prev) => {
+      const updatedCandidates = prev.map(c =>
+        c.id === candidateId ? { ...c, ...updates } : c
+      );
+      storage.set('allCandidates', updatedCandidates);
+      return updatedCandidates;
+    });
+  }, []);
 
   // Get candidates for session
   const getCandidatesForSession = useCallback((sessionId) => {

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Upload, 
   Camera, 
@@ -7,10 +7,16 @@ import {
   Pause, 
   Check, 
   X,
-  Image as ImageIcon,
+  Video,
+  Square,
   Volume2,
   User,
-  RefreshCw
+  RefreshCw,
+  StopCircle,
+  Smartphone,
+  Copy,
+  ExternalLink,
+  QrCode
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
@@ -29,17 +35,60 @@ const AvatarTraining = () => {
   const { user, updateProfile } = useAuth();
   
   const [step, setStep] = useState(1);
+  const [trainingMode, setTrainingMode] = useState('video'); // 'video' or 'photo'
+  const [avatarVideo, setAvatarVideo] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
   const [faceImages, setFaceImages] = useState([]);
   const [voiceSamples, setVoiceSamples] = useState([]);
-  const [avatarPreview, setAvatarPreview] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
+  const [isVideoRecording, setIsVideoRecording] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [trainingProgress, setTrainingProgress] = useState(0);
   const [trained, setTrained] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [recordingSessionId, setRecordingSessionId] = useState(null);
   
   const fileInputRef = useRef(null);
+  const videoInputRef = useRef(null);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const recordingTimerRef = useRef(null);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (streamRef.current) {
+        stopMediaStream(streamRef.current);
+      }
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Handle video file upload
+  const handleVideoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const videoUrl = URL.createObjectURL(file);
+      setAvatarVideo(videoUrl);
+      // Get thumbnail from video
+      const video = document.createElement('video');
+      video.src = videoUrl;
+      video.currentTime = 0.5;
+      video.onloadeddata = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        setAvatarPreview(canvas.toDataURL('image/jpeg'));
+      };
+    }
+  };
 
   // Handle image upload
   const handleImageUpload = (e) => {
@@ -51,7 +100,6 @@ const AvatarTraining = () => {
     }));
     setFaceImages(prev => [...prev, ...newImages].slice(0, 5));
     
-    // Set first image as avatar preview
     if (!avatarPreview && newImages.length > 0) {
       setAvatarPreview(newImages[0].preview);
     }
@@ -61,22 +109,104 @@ const AvatarTraining = () => {
   const removeImage = (id) => {
     setFaceImages(prev => {
       const filtered = prev.filter(img => img.id !== id);
-      if (filtered.length > 0 && avatarPreview) {
+      if (filtered.length > 0) {
         setAvatarPreview(filtered[0].preview);
-      } else if (filtered.length === 0) {
+      } else if (filtered.length === 0 && !avatarVideo) {
         setAvatarPreview(null);
       }
       return filtered;
     });
   };
 
-  // Start camera capture
-  const startCamera = async () => {
-    const { stream, error } = await getUserMedia(true, false);
-    if (stream && videoRef.current) {
-      streamRef.current = stream;
-      videoRef.current.srcObject = stream;
+  // Start camera for video recording
+  const startVideoCamera = async () => {
+    setCameraOpen(true);
+    setRecordingTime(0);
+    
+    setTimeout(async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { width: 1280, height: 720, facingMode: 'user' }, 
+          audio: true 
+        });
+        
+        if (videoRef.current) {
+          streamRef.current = stream;
+          videoRef.current.srcObject = stream;
+        }
+      } catch (error) {
+        console.error('Camera error:', error);
+        alert('Could not access camera and microphone. Please check permissions.');
+        setCameraOpen(false);
+      }
+    }, 100);
+  };
+
+  // Start recording video
+  const startVideoRecording = () => {
+    if (!streamRef.current) return;
+
+    const chunks = [];
+    const mediaRecorder = new MediaRecorder(streamRef.current, {
+      mimeType: 'video/webm;codecs=vp9,opus'
+    });
+
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) {
+        chunks.push(e.data);
+      }
+    };
+
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(chunks, { type: 'video/webm' });
+      const videoUrl = URL.createObjectURL(blob);
+      setAvatarVideo(videoUrl);
+      
+      // Get thumbnail
+      setTimeout(() => {
+        if (videoRef.current) {
+          const canvas = document.createElement('canvas');
+          canvas.width = videoRef.current.videoWidth || 640;
+          canvas.height = videoRef.current.videoHeight || 480;
+          canvas.getContext('2d').drawImage(videoRef.current, 0, 0);
+          setAvatarPreview(canvas.toDataURL('image/jpeg'));
+        }
+      }, 100);
+    };
+
+    mediaRecorderRef.current = mediaRecorder;
+    mediaRecorder.start();
+    setIsVideoRecording(true);
+
+    // Start timer
+    recordingTimerRef.current = setInterval(() => {
+      setRecordingTime(prev => prev + 1);
+    }, 1000);
+  };
+
+  // Stop recording video
+  const stopVideoRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
     }
+    setIsVideoRecording(false);
+    
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+    }
+  };
+
+  // Stop camera
+  const stopCamera = () => {
+    if (isVideoRecording) {
+      stopVideoRecording();
+    }
+    if (streamRef.current) {
+      stopMediaStream(streamRef.current);
+      streamRef.current = null;
+    }
+    setCameraOpen(false);
+    setRecordingTime(0);
   };
 
   // Capture photo from camera
@@ -103,61 +233,9 @@ const AvatarTraining = () => {
     }, 'image/jpeg');
   };
 
-  // Stop camera
-  const stopCamera = () => {
-    if (streamRef.current) {
-      stopMediaStream(streamRef.current);
-      streamRef.current = null;
-    }
-  };
-
-  // Record voice sample
-  const startVoiceRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      const chunks = [];
-
-      mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/webm' });
-        const newSample = {
-          id: Date.now(),
-          blob,
-          url: URL.createObjectURL(blob),
-        };
-        setVoiceSamples(prev => [...prev, newSample].slice(0, 3));
-        stream.getTracks().forEach(track => track.stop());
-      };
-
-      mediaRecorder.start();
-      setIsRecording(true);
-
-      // Stop after 10 seconds
-      setTimeout(() => {
-        if (mediaRecorder.state !== 'inactive') {
-          mediaRecorder.stop();
-          setIsRecording(false);
-        }
-      }, 10000);
-    } catch (error) {
-      console.error('Error recording voice:', error);
-    }
-  };
-
-  // Stop voice recording
-  const stopVoiceRecording = () => {
-    setIsRecording(false);
-  };
-
-  // Remove voice sample
-  const removeVoiceSample = (id) => {
-    setVoiceSamples(prev => prev.filter(s => s.id !== id));
-  };
-
-  // Simulate training
+  // Start training
   const startTraining = () => {
-    setStep(3);
+    setStep(2);
     setTrainingProgress(0);
     
     const interval = setInterval(() => {
@@ -166,9 +244,15 @@ const AvatarTraining = () => {
           clearInterval(interval);
           setTrained(true);
           
-          // Save avatar config
+          // Save avatar config to user profile
           updateProfile({
-            avatarImage: avatarPreview,
+            avatarConfig: {
+              avatarVideo: avatarVideo,
+              avatarImage: avatarPreview,
+              avatarName: user?.name || 'AI Interviewer',
+              trainingMode: trainingMode,
+              trainedAt: new Date().toISOString(),
+            },
             avatarTrained: true,
           });
           
@@ -176,16 +260,99 @@ const AvatarTraining = () => {
         }
         return prev + 2;
       });
-    }, 100);
+    }, 50);
   };
 
   // Test avatar
   const testAvatar = () => {
     setIsTesting(true);
-    speakText("Hello! I am your AI interviewer. I will be conducting your interview today. Are you ready to begin?", () => {
-      setIsTesting(false);
-    });
   };
+
+  // Format recording time
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Get current page URL for phone recording
+  const getPhoneRecordingLink = () => {
+    // Use network IP for cross-device access
+    const baseUrl = 'http://10.180.18.214:3002';
+    return `${baseUrl}/phone-recording/${recordingSessionId}`;
+  };
+
+  // Copy link to clipboard
+  const copyLinkToClipboard = () => {
+    navigator.clipboard.writeText(getPhoneRecordingLink());
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
+  };
+
+  // Generate QR code URL using external service
+  const getQRCodeUrl = () => {
+    const link = encodeURIComponent(getPhoneRecordingLink());
+    return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${link}`;
+  };
+
+  // Open phone modal and generate session
+  const openPhoneModal = () => {
+    const sessionId = `phone-rec-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    setRecordingSessionId(sessionId);
+    localStorage.setItem(`recording_session_${sessionId}`, JSON.stringify({
+      userId: user?.id,
+      userName: user?.name,
+      createdAt: new Date().toISOString()
+    }));
+    setShowPhoneModal(true);
+  };
+
+  // Check for uploaded video from phone
+  useEffect(() => {
+    const checkInterval = setInterval(() => {
+      if (recordingSessionId) {
+        const videoData = localStorage.getItem(`recording_video_${recordingSessionId}`);
+        if (videoData) {
+          try {
+            const { videoData: base64data, mimeType } = JSON.parse(videoData);
+            
+            // Convert base64 to blob
+            const byteString = atob(base64data.split(',')[1]);
+            const ab = new ArrayBuffer(byteString.length);
+            const ia = new Uint8Array(ab);
+            for (let i = 0; i < byteString.length; i++) {
+              ia[i] = byteString.charCodeAt(i);
+            }
+            const blob = new Blob([ab], { type: mimeType || 'video/webm' });
+            const videoUrl = URL.createObjectURL(blob);
+            
+            setAvatarVideo(videoUrl);
+            
+            // Get thumbnail
+            const video = document.createElement('video');
+            video.src = videoUrl;
+            video.currentTime = 0.5;
+            video.onloadeddata = () => {
+              const canvas = document.createElement('canvas');
+              canvas.width = video.videoWidth;
+              canvas.height = video.videoHeight;
+              canvas.getContext('2d').drawImage(video, 0, 0);
+              setAvatarPreview(canvas.toDataURL('image/jpeg'));
+            };
+            
+            // Clean up
+            localStorage.removeItem(`recording_video_${recordingSessionId}`);
+            setShowPhoneModal(false);
+            clearInterval(checkInterval);
+          } catch (err) {
+            console.error('Error processing phone video:', err);
+          }
+        }
+      }
+    }, 2000);
+
+    return () => clearInterval(checkInterval);
+  }, [recordingSessionId]);
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -193,16 +360,15 @@ const AvatarTraining = () => {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">AI Avatar Training</h1>
         <p className="text-gray-600 mt-1">
-          Train your AI avatar with your face and voice to conduct personalized interviews.
+          Record yourself to create a realistic video avatar that will conduct interviews.
         </p>
       </div>
 
       {/* Progress Steps */}
       <div className="flex items-center gap-4">
         {[
-          { num: 1, label: 'Face Images' },
-          { num: 2, label: 'Voice Samples' },
-          { num: 3, label: 'Training' },
+          { num: 1, label: 'Record Video' },
+          { num: 2, label: 'Training' },
         ].map((s, index) => (
           <React.Fragment key={s.num}>
             <div className="flex items-center gap-2">
@@ -219,197 +385,143 @@ const AvatarTraining = () => {
                 {s.label}
               </span>
             </div>
-            {index < 2 && (
+            {index < 1 && (
               <div className={`flex-1 h-0.5 ${step > s.num ? 'bg-primary-600' : 'bg-gray-200'}`} />
             )}
           </React.Fragment>
         ))}
       </div>
 
-      {/* Step 1: Face Images */}
+      {/* Step 1: Record Video */}
       {step === 1 && (
         <Card>
           <CardHeader>
-            <CardTitle>Upload Face Images</CardTitle>
+            <CardTitle>Record Your Interviewer Video</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <Alert
               type="info"
-              title="Tips for best results"
-              message="Upload 3-5 clear photos of your face from different angles. Good lighting and a neutral background work best."
+              title="Recording Tips"
+              message="Record yourself introducing yourself and asking a sample question. Speak clearly, look at the camera, and ensure good lighting. This video will be shown to candidates during interviews."
             />
 
-            {/* Upload Area */}
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-primary-400 hover:bg-primary-50 transition-colors"
-            >
-              <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 font-medium">Click to upload images</p>
-              <p className="text-sm text-gray-500 mt-1">or drag and drop • PNG, JPG up to 5MB</p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleImageUpload}
-                className="hidden"
-              />
-            </div>
-
-            {/* Image Preview Grid */}
-            {faceImages.length > 0 && (
-              <div className="grid grid-cols-5 gap-4">
-                {faceImages.map((image) => (
-                  <div key={image.id} className="relative group">
-                    <img
-                      src={image.preview}
-                      alt="Face"
-                      className="w-full aspect-square object-cover rounded-lg"
-                    />
-                    <button
-                      onClick={() => removeImage(image.id)}
-                      className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
+            {/* Video Preview */}
+            {avatarVideo && (
+              <div className="space-y-4">
+                <div className="relative bg-gray-900 rounded-xl overflow-hidden aspect-video">
+                  <video
+                    src={avatarVideo}
+                    controls
+                    className="w-full h-full object-cover"
+                  />
+                  <button
+                    onClick={() => {
+                      setAvatarVideo(null);
+                      setAvatarPreview(null);
+                    }}
+                    className="absolute top-3 right-3 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="flex items-center gap-2 text-green-600">
+                  <Check className="w-5 h-5" />
+                  <span className="font-medium">Video recorded successfully!</span>
+                </div>
               </div>
             )}
 
-            {/* Camera Capture Option */}
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">or capture with camera</span>
-              </div>
-            </div>
+            {/* Recording Options */}
+            {!avatarVideo && (
+              <>
+                <div className="grid md:grid-cols-3 gap-4">
+                  {/* Record Video Button */}
+                  <div
+                    onClick={startVideoCamera}
+                    className="border-2 border-dashed border-primary-300 rounded-xl p-6 text-center cursor-pointer hover:border-primary-500 hover:bg-primary-50 transition-colors"
+                  >
+                    <div className="w-14 h-14 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <Video className="w-7 h-7 text-primary-600" />
+                    </div>
+                    <p className="text-gray-900 font-semibold">Record Video</p>
+                    <p className="text-xs text-gray-500 mt-1">Use webcam to record</p>
+                  </div>
 
-            <div className="flex justify-center">
-              <Button variant="secondary" icon={Camera} onClick={startCamera}>
-                Open Camera
-              </Button>
-            </div>
+                  {/* Phone Recording Button */}
+                  <div
+                    onClick={openPhoneModal}
+                    className="border-2 border-dashed border-green-300 rounded-xl p-6 text-center cursor-pointer hover:border-green-500 hover:bg-green-50 transition-colors"
+                  >
+                    <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <Smartphone className="w-7 h-7 text-green-600" />
+                    </div>
+                    <p className="text-gray-900 font-semibold">Use Phone</p>
+                    <p className="text-xs text-gray-500 mt-1">Record with your phone</p>
+                  </div>
+
+                  {/* Upload Video Button */}
+                  <div
+                    onClick={() => videoInputRef.current?.click()}
+                    className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer hover:border-gray-400 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <Upload className="w-7 h-7 text-gray-600" />
+                    </div>
+                    <p className="text-gray-900 font-semibold">Upload Video</p>
+                    <p className="text-xs text-gray-500 mt-1">MP4, WebM up to 50MB</p>
+                    <input
+                      ref={videoInputRef}
+                      type="file"
+                      accept="video/*"
+                      onChange={handleVideoUpload}
+                      className="hidden"
+                    />
+                  </div>
+                </div>
+
+                {/* Sample Script */}
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                  <h4 className="font-semibold text-blue-900 mb-2">📝 Sample Script to Read:</h4>
+                  <p className="text-blue-800 italic leading-relaxed">
+                    "Hello! I'm [Your Name], and I'll be your interviewer today. Thank you for taking the time to interview with us. 
+                    I'm going to ask you a few questions about your experience and skills. Please take your time and answer as thoroughly as you'd like. 
+                    Let's begin with our first question..."
+                  </p>
+                </div>
+              </>
+            )}
 
             {/* Navigation */}
             <div className="flex justify-end pt-4">
               <Button
                 variant="primary"
-                onClick={() => setStep(2)}
-                disabled={faceImages.length === 0}
+                onClick={startTraining}
+                disabled={!avatarVideo}
               >
-                Next: Voice Samples
+                Continue to Training
               </Button>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Step 2: Voice Samples */}
+      {/* Step 2: Training */}
       {step === 2 && (
         <Card>
           <CardHeader>
-            <CardTitle>Record Voice Samples</CardTitle>
+            <CardTitle>{trained ? 'Training Complete!' : 'Processing Your Avatar'}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <Alert
-              type="info"
-              title="Recording tips"
-              message="Record 2-3 samples of yourself speaking naturally. Read the prompts below for consistent results."
-            />
-
-            {/* Recording Prompts */}
-            <div className="space-y-4">
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-500 mb-2">Sample prompt 1:</p>
-                <p className="text-gray-700 italic">
-                  "Hello and welcome to this interview. I'm excited to learn more about your experience and skills."
-                </p>
-              </div>
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-500 mb-2">Sample prompt 2:</p>
-                <p className="text-gray-700 italic">
-                  "Thank you for taking the time to interview with us today. Let's get started with the first question."
-                </p>
-              </div>
-            </div>
-
-            {/* Recording Button */}
-            <div className="flex justify-center">
-              <button
-                onClick={isRecording ? stopVoiceRecording : startVoiceRecording}
-                className={`w-24 h-24 rounded-full flex items-center justify-center transition-all ${
-                  isRecording
-                    ? 'bg-red-500 hover:bg-red-600 recording-indicator'
-                    : 'bg-primary-600 hover:bg-primary-700'
-                }`}
-              >
-                <Mic className="w-10 h-10 text-white" />
-              </button>
-            </div>
-            <p className="text-center text-sm text-gray-500">
-              {isRecording ? 'Recording... Click to stop' : 'Click to start recording (max 10 seconds)'}
-            </p>
-
-            {/* Voice Samples List */}
-            {voiceSamples.length > 0 && (
-              <div className="space-y-3">
-                <h4 className="font-medium text-gray-900">Recorded Samples ({voiceSamples.length}/3)</h4>
-                {voiceSamples.map((sample, index) => (
-                  <div key={sample.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-                    <div className="p-2 bg-primary-100 rounded-lg">
-                      <Volume2 className="w-5 h-5 text-primary-600" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900">Voice Sample {index + 1}</p>
-                      <audio src={sample.url} controls className="mt-2 w-full" />
-                    </div>
-                    <button
-                      onClick={() => removeVoiceSample(sample.id)}
-                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Navigation */}
-            <div className="flex justify-between pt-4">
-              <Button variant="secondary" onClick={() => setStep(1)}>
-                Back
-              </Button>
-              <Button
-                variant="primary"
-                onClick={startTraining}
-                disabled={voiceSamples.length === 0}
-              >
-                Start Training
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Step 3: Training */}
-      {step === 3 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{trained ? 'Training Complete!' : 'Training Your Avatar'}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex justify-center">
+            <div className="max-w-2xl mx-auto">
               <AIAvatar
+                avatarVideo={isTesting ? avatarVideo : null}
                 avatarImage={avatarPreview}
                 avatarName={user?.name || 'AI Interviewer'}
-                text={isTesting ? "Hello! I am your AI interviewer." : null}
+                text={isTesting ? null : null}
                 autoSpeak={false}
                 showControls={false}
                 size="lg"
+                onSpeechEnd={() => setIsTesting(false)}
               />
             </div>
 
@@ -417,7 +529,7 @@ const AvatarTraining = () => {
               <div className="space-y-4">
                 <Progress value={trainingProgress} showLabel animated />
                 <p className="text-center text-gray-600">
-                  Training your AI avatar... This may take a moment.
+                  Processing your video avatar... This may take a moment.
                 </p>
               </div>
             ) : (
@@ -425,27 +537,218 @@ const AvatarTraining = () => {
                 <Alert
                   type="success"
                   title="Avatar Ready!"
-                  message="Your AI avatar has been trained and is ready to conduct interviews."
+                  message="Your video avatar has been processed and is ready to conduct interviews. Candidates will see your video during the interview."
                 />
 
                 <div className="flex justify-center gap-4">
                   <Button variant="secondary" icon={Play} onClick={testAvatar}>
-                    Test Avatar
+                    Preview Avatar
                   </Button>
                   <Button variant="primary" icon={RefreshCw} onClick={() => {
                     setStep(1);
                     setTrained(false);
-                    setFaceImages([]);
-                    setVoiceSamples([]);
+                    setAvatarVideo(null);
                     setAvatarPreview(null);
+                    setIsTesting(false);
                   }}>
-                    Retrain
+                    Record New Video
                   </Button>
                 </div>
               </div>
             )}
           </CardContent>
         </Card>
+      )}
+
+      {/* Camera/Recording Modal */}
+      {cameraOpen && (
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-xl max-w-4xl w-full overflow-hidden">
+            {/* Video Preview */}
+            <div className="relative aspect-video bg-black">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover"
+              />
+              
+              {/* Recording Indicator */}
+              {isVideoRecording && (
+                <div className="absolute top-4 left-4 flex items-center gap-2 bg-red-600 px-4 py-2 rounded-full animate-pulse">
+                  <div className="w-3 h-3 bg-white rounded-full" />
+                  <span className="text-white font-semibold">REC</span>
+                  <span className="text-white font-mono">{formatTime(recordingTime)}</span>
+                </div>
+              )}
+
+              {/* Close Button */}
+              <button
+                onClick={stopCamera}
+                className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+
+              {/* Instructions */}
+              {!isVideoRecording && !avatarVideo && (
+                <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 bg-black/70 px-6 py-3 rounded-lg">
+                  <p className="text-white text-center">
+                    Position yourself in frame, then click record to start
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Controls */}
+            <div className="p-6 bg-gray-800 flex items-center justify-center gap-4">
+              {!isVideoRecording ? (
+                <>
+                  <Button
+                    variant="secondary"
+                    onClick={stopCamera}
+                    className="bg-gray-700 hover:bg-gray-600 text-white border-gray-600"
+                  >
+                    Cancel
+                  </Button>
+                  <button
+                    onClick={startVideoRecording}
+                    className="w-16 h-16 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center transition-colors shadow-lg"
+                  >
+                    <div className="w-6 h-6 bg-white rounded-full" />
+                  </button>
+                  <Button
+                    variant="secondary"
+                    icon={Camera}
+                    onClick={capturePhoto}
+                    className="bg-gray-700 hover:bg-gray-600 text-white border-gray-600"
+                  >
+                    Photo
+                  </Button>
+                </>
+              ) : (
+                <button
+                  onClick={() => {
+                    stopVideoRecording();
+                    stopCamera();
+                  }}
+                  className="w-16 h-16 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center transition-colors shadow-lg animate-pulse"
+                >
+                  <Square className="w-6 h-6 text-white fill-white" />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Phone Recording Modal */}
+      {showPhoneModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-lg w-full p-6 space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-bold text-gray-900">Record with Your Phone</h3>
+              <button
+                onClick={() => setShowPhoneModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* QR Code */}
+            <div className="flex flex-col items-center">
+              <div className="bg-white p-4 rounded-xl shadow-lg border-2 border-gray-100">
+                <img
+                  src={getQRCodeUrl()}
+                  alt="QR Code"
+                  className="w-48 h-48"
+                />
+              </div>
+              <p className="text-sm text-gray-600 mt-3 text-center">
+                Scan this QR code with your phone camera
+              </p>
+            </div>
+
+            {/* Divider */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-3 bg-white text-gray-500">or share the link</span>
+              </div>
+            </div>
+
+            {/* Link Copy Section */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={getPhoneRecordingLink()}
+                  readOnly
+                  className="flex-1 px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-sm text-gray-700 truncate"
+                />
+                <button
+                  onClick={copyLinkToClipboard}
+                  className={`px-4 py-3 rounded-lg font-medium transition-all ${
+                    linkCopied
+                      ? 'bg-green-500 text-white'
+                      : 'bg-primary-600 text-white hover:bg-primary-700'
+                  }`}
+                >
+                  {linkCopied ? (
+                    <Check className="w-5 h-5" />
+                  ) : (
+                    <Copy className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
+              {linkCopied && (
+                <p className="text-sm text-green-600 text-center">Link copied to clipboard!</p>
+              )}
+            </div>
+
+            {/* Instructions */}
+            <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+              <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                <Smartphone className="w-5 h-5 text-green-600" />
+                How to record on your phone:
+              </h4>
+              <ol className="text-sm text-gray-600 space-y-2 list-decimal list-inside">
+                <li>Scan the QR code or open the link on your phone</li>
+                <li>This opens a special recording page on any browser</li>
+                <li>Grant camera and microphone permissions</li>
+                <li>Record yourself asking a sample interview question</li>
+                <li>The video will automatically sync back to this page</li>
+              </ol>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-3">
+                <p className="text-xs text-blue-800">
+                  💡 <strong>Tip:</strong> Keep this page open while recording on your phone. The video will appear here automatically when you finish recording.
+                </p>
+              </div>
+            </div>
+
+            {/* Alternative: Direct Upload */}
+            <div className="border-t pt-4">
+              <p className="text-sm text-gray-600 mb-3 text-center">
+                Already recorded on your phone? Upload the video directly:
+              </p>
+              <Button
+                variant="secondary"
+                icon={Upload}
+                onClick={() => {
+                  setShowPhoneModal(false);
+                  videoInputRef.current?.click();
+                }}
+                className="w-full"
+              >
+                Upload Video from Phone
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

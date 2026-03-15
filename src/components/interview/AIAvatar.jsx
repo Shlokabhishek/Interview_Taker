@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Volume2, VolumeX, User } from 'lucide-react';
+import { Volume2, VolumeX, User, Video, Play } from 'lucide-react';
 import { Avatar } from '../shared';
 import { speakText, stopSpeech } from '../../utils/mediaUtils';
 
 const AIAvatar = ({
   avatarImage,
+  avatarVideo, // New prop for video URL
   avatarName = 'AI Interviewer',
   text,
   onSpeechEnd,
@@ -15,10 +16,35 @@ const AIAvatar = ({
 }) => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const utteranceRef = useRef(null);
+  const videoRef = useRef(null);
 
-  // Speak the text
+  // Play video if available
+  const playVideo = useCallback(() => {
+    if (avatarVideo && videoRef.current) {
+      videoRef.current.currentTime = 0;
+      videoRef.current.play();
+      setIsVideoPlaying(true);
+      setIsSpeaking(true);
+    }
+  }, [avatarVideo]);
+
+  // Handle video end
+  const handleVideoEnd = useCallback(() => {
+    setIsVideoPlaying(false);
+    setIsSpeaking(false);
+    if (onSpeechEnd) onSpeechEnd();
+  }, [onSpeechEnd]);
+
+  // Speak the text (fallback when no video)
   const speak = useCallback(() => {
+    // If video is available, play video instead
+    if (avatarVideo && videoRef.current) {
+      playVideo();
+      return;
+    }
+
     if (!text || isMuted) {
       if (onSpeechEnd) onSpeechEnd();
       return;
@@ -30,12 +56,17 @@ const AIAvatar = ({
       setIsSpeaking(false);
       if (onSpeechEnd) onSpeechEnd();
     });
-  }, [text, isMuted, onSpeechEnd]);
+  }, [text, isMuted, onSpeechEnd, avatarVideo, playVideo]);
 
-  // Stop speaking
+  // Stop speaking/playing
   const stop = useCallback(() => {
     stopSpeech();
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+    }
     setIsSpeaking(false);
+    setIsVideoPlaying(false);
   }, []);
 
   // Toggle mute
@@ -44,18 +75,21 @@ const AIAvatar = ({
       stop();
     }
     setIsMuted(!isMuted);
+    if (videoRef.current) {
+      videoRef.current.muted = !isMuted;
+    }
   }, [isMuted, isSpeaking, stop]);
 
-  // Auto speak when text changes
+  // Auto speak/play when text changes
   useEffect(() => {
-    if (autoSpeak && text) {
+    if (autoSpeak && (text || avatarVideo)) {
       speak();
     }
     
     return () => {
       stop();
     };
-  }, [text, autoSpeak]);
+  }, [text, autoSpeak, avatarVideo]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -65,108 +99,137 @@ const AIAvatar = ({
   }, []);
 
   const avatarSizes = {
-    sm: '2xl',
-    md: '2xl',
-    lg: '3xl',
-  };
-
-  const containerSizes = {
-    sm: 'w-32 h-32',
-    md: 'w-48 h-48',
-    lg: 'w-64 h-64',
+    sm: 'w-48 h-48',
+    md: 'w-64 h-64',
+    lg: 'w-full aspect-video',
   };
 
   return (
-    <div className={`flex flex-col items-center ${className}`}>
-      {/* Avatar Container */}
-      <div className={`relative ${containerSizes[size]}`}>
-        {/* Animated rings when speaking */}
-        {isSpeaking && (
-          <>
-            <div className="absolute inset-0 rounded-full bg-primary-400/20 animate-ping" />
-            <div className="absolute inset-2 rounded-full bg-primary-400/30 animate-pulse" />
-          </>
-        )}
-        
-        {/* Avatar */}
-        <div className="absolute inset-4 rounded-full overflow-hidden bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-xl">
-          {avatarImage ? (
+    <div className={`flex flex-col ${className}`}>
+      {/* Live Video Container */}
+      <div className="relative w-full bg-gray-900 rounded-lg overflow-hidden shadow-2xl">
+        {/* Video Feed */}
+        <div className={`relative ${avatarSizes[size]}`}>
+          {/* Real Video Playback */}
+          {avatarVideo ? (
+            <video
+              ref={videoRef}
+              src={avatarVideo}
+              className="w-full h-full object-cover"
+              onEnded={handleVideoEnd}
+              onPlay={() => { setIsVideoPlaying(true); setIsSpeaking(true); }}
+              onPause={() => { setIsVideoPlaying(false); setIsSpeaking(false); }}
+              muted={isMuted}
+              playsInline
+            />
+          ) : avatarImage ? (
             <img
               src={avatarImage}
               alt={avatarName}
-              className={`w-full h-full object-cover ${isSpeaking ? 'avatar-speaking' : ''}`}
+              className={`w-full h-full object-cover transition-transform ${
+                isSpeaking ? 'scale-105' : 'scale-100'
+              }`}
+              style={{ transition: 'transform 0.3s ease' }}
             />
           ) : (
-            <div className={`flex flex-col items-center justify-center w-full h-full ${isSpeaking ? 'avatar-speaking' : ''}`}>
-              <div className="text-white font-bold text-6xl">
-                {avatarName
-                  .split(' ')
-                  .map(n => n[0])
-                  .join('')
-                  .toUpperCase()
-                  .slice(0, 2)}
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
+              <div className="flex flex-col items-center">
+                <div className="w-24 h-24 rounded-full bg-primary-500/20 flex items-center justify-center mb-4">
+                  <div className="text-white font-bold text-4xl">
+                    {avatarName
+                      .split(' ')
+                      .map(n => n[0])
+                      .join('')
+                      .toUpperCase()
+                      .slice(0, 2)}
+                  </div>
+                </div>
+                <User className="w-8 h-8 text-white/40" />
               </div>
-              <User className="w-12 h-12 text-white/60 mt-2" />
             </div>
           )}
-        </div>
 
-        {/* Speaking indicator */}
-        {isSpeaking && (
-          <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 flex items-center gap-1 bg-primary-600 px-3 py-1 rounded-full">
-            <div className="flex items-center gap-0.5">
-              <span className="w-1 h-3 bg-white rounded-full animate-pulse" style={{ animationDelay: '0ms' }} />
-              <span className="w-1 h-4 bg-white rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
-              <span className="w-1 h-2 bg-white rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
-              <span className="w-1 h-5 bg-white rounded-full animate-pulse" style={{ animationDelay: '450ms' }} />
-              <span className="w-1 h-3 bg-white rounded-full animate-pulse" style={{ animationDelay: '600ms' }} />
+          {/* Live Indicator */}
+          <div className="absolute top-3 left-3 flex items-center gap-2 bg-red-600 px-3 py-1.5 rounded-full shadow-lg">
+            <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+            <span className="text-white text-xs font-semibold tracking-wider">LIVE</span>
+          </div>
+
+          {/* Interviewer Name Badge */}
+          <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm px-3 py-2 rounded-lg">
+            <p className="text-white text-sm font-medium">{avatarName}</p>
+            <p className="text-gray-300 text-xs">AI Interviewer</p>
+          </div>
+
+          {/* Speaking Indicator Overlay */}
+          {isSpeaking && (
+            <>
+              <div className="absolute inset-0 border-4 border-green-500 animate-pulse pointer-events-none" />
+              <div className="absolute top-3 right-3 flex items-center gap-2 bg-green-600 px-3 py-1.5 rounded-full shadow-lg">
+                <div className="flex items-center gap-0.5">
+                  <span className="w-1 h-3 bg-white rounded-full animate-pulse" style={{ animationDelay: '0ms' }} />
+                  <span className="w-1 h-4 bg-white rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
+                  <span className="w-1 h-2 bg-white rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
+                  <span className="w-1 h-5 bg-white rounded-full animate-pulse" style={{ animationDelay: '450ms' }} />
+                  <span className="w-1 h-3 bg-white rounded-full animate-pulse" style={{ animationDelay: '600ms' }} />
+                </div>
+                <span className="text-white text-xs font-semibold">Speaking</span>
+              </div>
+            </>
+          )}
+
+          {/* Connection Quality Indicator */}
+          <div className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-2.5 py-1.5 rounded">
+            <Video className="w-3.5 h-3.5 text-green-400" />
+            <div className="flex items-end gap-0.5">
+              <div className="w-0.5 h-2 bg-green-400 rounded-full" />
+              <div className="w-0.5 h-3 bg-green-400 rounded-full" />
+              <div className="w-0.5 h-4 bg-green-400 rounded-full" />
             </div>
           </div>
-        )}
+        </div>
       </div>
-
-      {/* Name */}
-      <h3 className="mt-4 text-lg font-semibold text-gray-900">{avatarName}</h3>
-      
-      {/* Status */}
-      <p className="text-sm text-gray-500">
-        {isSpeaking ? 'Speaking...' : isMuted ? 'Muted' : 'Ready'}
-      </p>
 
       {/* Controls */}
       {showControls && (
-        <div className="flex items-center gap-3 mt-4">
-          <button
-            onClick={toggleMute}
-            className={`p-3 rounded-full transition-colors ${
-              isMuted 
-                ? 'bg-red-100 text-red-600 hover:bg-red-200' 
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-            title={isMuted ? 'Unmute' : 'Mute'}
-          >
-            {isMuted ? (
-              <VolumeX className="w-5 h-5" />
-            ) : (
-              <Volume2 className="w-5 h-5" />
-            )}
-          </button>
-          
-          {!isSpeaking && text && !isMuted && (
+        <div className="flex items-center justify-between mt-4 px-2">
+          <div className="flex items-center gap-3">
             <button
-              onClick={speak}
-              className="px-4 py-2 bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors text-sm font-medium"
+              onClick={toggleMute}
+              className={`p-2.5 rounded-full transition-all ${
+                isMuted 
+                  ? 'bg-red-500 text-white hover:bg-red-600' 
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+              title={isMuted ? 'Unmute' : 'Mute'}
             >
-              Replay
+              {isMuted ? (
+                <VolumeX className="w-4 h-4" />
+              ) : (
+                <Volume2 className="w-4 h-4" />
+              )}
             </button>
-          )}
+            
+            {!isSpeaking && text && !isMuted && (
+              <button
+                onClick={speak}
+                className="px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-xs font-medium"
+              >
+                Replay
+              </button>
+            )}
+          </div>
+
+          <div className="text-xs text-gray-500">
+            {isSpeaking ? '🎙️ Speaking...' : isMuted ? '🔇 Muted' : '✓ Connected'}
+          </div>
         </div>
       )}
 
-      {/* Current text being spoken */}
+      {/* Current text being spoken - Subtitle Style */}
       {text && (
-        <div className="mt-4 p-4 bg-gray-50 rounded-xl max-w-md text-center">
-          <p className="text-gray-700 text-sm leading-relaxed">{text}</p>
+        <div className="mt-3 p-3 bg-black/80 backdrop-blur-sm rounded-lg">
+          <p className="text-white text-sm leading-relaxed text-center">{text}</p>
         </div>
       )}
     </div>

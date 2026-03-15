@@ -20,6 +20,9 @@ import {
   InterviewComplete
 } from './pages';
 
+// Import Phone Recording (not exported from pages/index)
+import PhoneRecording from './pages/PhoneRecording';
+
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -204,6 +207,14 @@ const AppRoutes = () => {
         } 
       />
       <Route 
+        path="/interviewer/avatar-training" 
+        element={
+          <ProtectedRoute>
+            <AvatarTraining />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
         path="/interviewer/avatar" 
         element={
           <ProtectedRoute>
@@ -250,6 +261,9 @@ const AppRoutes = () => {
       <Route path="/interview/:link" element={<CandidateRegistration />} />
       <Route path="/interview/:link/room" element={<InterviewRoom />} />
       <Route path="/interview/:link/complete" element={<InterviewComplete />} />
+
+      {/* Phone Recording Route (Public) */}
+      <Route path="/phone-recording/:sessionId" element={<PhoneRecording />} />
 
       {/* 404 Fallback */}
       <Route 

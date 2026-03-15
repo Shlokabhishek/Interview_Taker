@@ -8,7 +8,8 @@ import {
   Clock,
   BarChart3,
   ArrowRight,
-  Calendar
+  Calendar,
+  Sparkles
 } from 'lucide-react';
 import { useInterview } from '../../contexts/InterviewContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -75,8 +76,34 @@ const Dashboard = () => {
         })}
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Recent Sessions */}
+      {/* Avatar Training Prompt */}
+      {!user?.avatarTrained && (
+        <Card className="bg-gradient-to-r from-primary-50 to-blue-50 border-primary-200">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-primary-100 rounded-lg">
+                <Sparkles className="w-6 h-6 text-primary-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                  Create Your AI Interviewer Avatar
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  Train an AI avatar with your face and voice to conduct personalized interviews. 
+                  Candidates will see your avatar instead of a generic placeholder.
+                </p>
+                <Link to="/interviewer/avatar-training">
+                  <Button variant="primary" icon={ArrowRight} iconPosition="right">
+                    Train Avatar Now
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid lg:grid-cols-2 gap-6">{/* Recent Sessions */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
