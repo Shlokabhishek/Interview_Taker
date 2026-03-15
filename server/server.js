@@ -70,7 +70,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
-    const pathname = url.pathname;
+    const pathname = url.pathname.startsWith('/api/') ? url.pathname.slice(4) : url.pathname;
 
     if (req.method === 'GET' && pathname === '/health') {
       sendJson(res, 200, { ok: true });
@@ -88,8 +88,8 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    if (req.method === 'GET' && pathname.startsWith('/sessions/by-link/')) {
-      const link = decodeURIComponent(pathname.split('/').pop() || '');
+    if (req.method === 'GET' && pathname === '/session-by-link') {
+      const link = url.searchParams.get('link') || '';
       const db = await readDb();
       const session = db.sessions.find((s) => s?.link === link);
       if (!session) {
@@ -115,8 +115,8 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    if (pathname.startsWith('/sessions/') && pathname.split('/').length === 3) {
-      const sessionId = decodeURIComponent(pathname.split('/')[2]);
+    if (pathname === '/sessions' && url.searchParams.get('id')) {
+      const sessionId = url.searchParams.get('id');
       if (req.method === 'PATCH') {
         const updates = await readJsonBody(req);
         const db = await readDb();
@@ -173,8 +173,8 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    if (pathname.startsWith('/candidates/') && pathname.split('/').length === 3) {
-      const candidateId = decodeURIComponent(pathname.split('/')[2]);
+    if (pathname === '/candidates' && url.searchParams.get('id')) {
+      const candidateId = url.searchParams.get('id');
       if (req.method === 'PATCH') {
         const updates = await readJsonBody(req);
         const db = await readDb();
@@ -200,4 +200,3 @@ server.listen(PORT, () => {
   // eslint-disable-next-line no-console
   console.log(`Backend running on http://localhost:${PORT}`);
 });
-

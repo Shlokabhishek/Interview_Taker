@@ -12,6 +12,7 @@
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
+    "@vercel/kv": "^1.0.1",
     "date-fns": "^2.30.0",
     "face-api.js": "^0.22.2",
     "lucide-react": "^0.294.0",

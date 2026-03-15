@@ -71,6 +71,10 @@ Then set the backend URL in the app:
 For sharing interview links on LAN, set:
 - `Public Base URL (Share Links)` to `https://<your-ip>:3001` (or your deployed domain)
 
+### Vercel Deployment Notes
+
+This repo includes Vercel Serverless Functions under `api/` for sessions/candidates. For persistence on Vercel, add **Vercel KV** to your project (Storage tab). Without KV, the API falls back to in-memory storage and links may stop working after cold starts.
+
 ### Demo Credentials
 
 **Interviewer Account:**

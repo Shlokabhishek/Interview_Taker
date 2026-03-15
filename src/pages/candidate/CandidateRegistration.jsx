@@ -149,7 +149,8 @@ const CandidateRegistration = () => {
               <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
               <h2 className="text-xl font-semibold text-gray-900 mb-2">Interview Not Found</h2>
               <p className="text-gray-500 mb-6">
-                This interview link is invalid or has expired. Please check the link and try again.
+                This interview link is invalid, expired, or the session is not available on this device.
+                If you're using a deployed link, make sure the backend is configured so sessions can be fetched across devices.
               </p>
               <Button variant="primary" onClick={() => navigate('/')}>
                 Go to Homepage

@@ -131,7 +131,7 @@ export const InterviewProvider = ({ children }) => {
   const updateSession = useCallback((sessionId, updates) => {
     const apiBaseUrl = getApiBaseUrl();
     if (apiBaseUrl) {
-      apiFetchJson(`/sessions/${encodeURIComponent(sessionId)}`, { method: 'PATCH', body: JSON.stringify(updates) }).catch(() => {});
+      apiFetchJson(`/sessions?id=${encodeURIComponent(sessionId)}`, { method: 'PATCH', body: JSON.stringify(updates) }).catch(() => {});
     }
 
     const updatedSessions = sessions.map(session => 
@@ -150,7 +150,7 @@ export const InterviewProvider = ({ children }) => {
   const deleteSession = useCallback((sessionId) => {
     const apiBaseUrl = getApiBaseUrl();
     if (apiBaseUrl) {
-      apiFetchJson(`/sessions/${encodeURIComponent(sessionId)}`, { method: 'DELETE' }).catch(() => {});
+      apiFetchJson(`/sessions?id=${encodeURIComponent(sessionId)}`, { method: 'DELETE' }).catch(() => {});
     }
 
     const updatedSessions = sessions.filter(s => s.id !== sessionId);
@@ -223,7 +223,7 @@ export const InterviewProvider = ({ children }) => {
     if (apiBaseUrl) {
       // Async fetch isn't compatible with the existing call sites; return best-effort cache.
       // Candidate pages use this synchronously, so we keep local search and refresh in background.
-      apiFetchJson(`/sessions/by-link/${encodeURIComponent(link)}`)
+      apiFetchJson(`/session-by-link?link=${encodeURIComponent(link)}`)
         .then((remote) => {
           if (remote?.id) {
             setSessions((prev) => {
@@ -252,14 +252,19 @@ export const InterviewProvider = ({ children }) => {
   const fetchSessionByLink = useCallback(async (link) => {
     const apiBaseUrl = getApiBaseUrl();
     if (apiBaseUrl) {
-      const remote = await apiFetchJson(`/sessions/by-link/${encodeURIComponent(link)}`);
-      if (remote?.id) {
-        setSessions((prev) => {
-          const exists = prev.some((s) => s.id === remote.id);
-          return exists ? prev.map((s) => (s.id === remote.id ? remote : s)) : [...prev, remote];
-        });
+      try {
+        const remote = await apiFetchJson(`/session-by-link?link=${encodeURIComponent(link)}`);
+        if (remote?.id) {
+          setSessions((prev) => {
+            const exists = prev.some((s) => s.id === remote.id);
+            return exists ? prev.map((s) => (s.id === remote.id ? remote : s)) : [...prev, remote];
+          });
+        }
+        return remote || null;
+      } catch (e) {
+        // Fall back to localStorage-based lookup (useful in dev when no backend is running)
+        return getSessionByLink(link);
       }
-      return remote || null;
     }
 
     return getSessionByLink(link);
@@ -295,7 +300,7 @@ export const InterviewProvider = ({ children }) => {
   const updateCandidate = useCallback((candidateId, updates) => {
     const apiBaseUrl = getApiBaseUrl();
     if (apiBaseUrl) {
-      apiFetchJson(`/candidates/${encodeURIComponent(candidateId)}`, { method: 'PATCH', body: JSON.stringify(updates) }).catch(() => {});
+      apiFetchJson(`/candidates?id=${encodeURIComponent(candidateId)}`, { method: 'PATCH', body: JSON.stringify(updates) }).catch(() => {});
     }
 
     setCandidates((prev) => {
