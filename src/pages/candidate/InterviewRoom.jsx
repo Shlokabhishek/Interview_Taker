@@ -163,6 +163,11 @@ const InterviewRoom = () => {
   const totalQuestions = session?.questions?.length || 0;
   const progress = totalQuestions > 0 ? ((currentQuestionIndex + 1) / totalQuestions) * 100 : 0;
 
+  const embedTrainedAvatar = Boolean(session?.avatarConfig?.trainedAt);
+  const avatarVideo = session?.avatarConfig?.avatarVideo || null;
+  const avatarImage = session?.avatarConfig?.avatarImage || session?.avatarImage || null;
+  const avatarName = session?.avatarConfig?.avatarName || session?.interviewerName || 'AI Interviewer';
+
   // Ask a question
   const askQuestion = useCallback((questionIndex) => {
     const question = session?.questions?.[questionIndex];
@@ -370,38 +375,40 @@ const InterviewRoom = () => {
           </div>
 
           {/* Main Content */}
-          <div className="grid lg:grid-cols-3 gap-6">
-            {/* AI Avatar Section */}
-            <div className="lg:col-span-1">
-              <Card className="h-full bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700">
-                <div className="p-6 flex flex-col items-center justify-center h-full">
-                  <AIAvatar
-                    avatarVideo={session.avatarConfig?.avatarVideo || null}
-                    avatarImage={session.avatarConfig?.avatarImage || session.avatarImage}
-                    avatarName={session.avatarConfig?.avatarName || session.interviewerName || 'AI Interviewer'}
-                    text={phase === 'question' ? currentQuestion?.text : null}
-                    autoSpeak={phase === 'question'}
-                    showControls={false}
-                    size="lg"
-                    onSpeechEnd={beginAnswering}
-                  />
-                  
-                  {isAISpeaking && (
-                    <div className="mt-4 flex items-center gap-2 text-primary-400">
-                      <div className="flex items-center gap-1">
-                        <span className="w-1 h-3 bg-primary-400 rounded-full animate-pulse" />
-                        <span className="w-1 h-4 bg-primary-400 rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
-                        <span className="w-1 h-2 bg-primary-400 rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
+          <div className={embedTrainedAvatar ? 'space-y-6' : 'grid lg:grid-cols-3 gap-6'}>
+            {/* AI Avatar Section (when not embedded) */}
+            {!embedTrainedAvatar && (
+              <div className="lg:col-span-1">
+                <Card className="h-full bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700">
+                  <div className="p-6 flex flex-col items-center justify-center h-full">
+                    <AIAvatar
+                      avatarVideo={avatarVideo}
+                      avatarImage={avatarImage}
+                      avatarName={avatarName}
+                      text={phase === 'question' ? currentQuestion?.text : null}
+                      autoSpeak={phase === 'question'}
+                      showControls={false}
+                      size="lg"
+                      onSpeechEnd={beginAnswering}
+                    />
+                    
+                    {isAISpeaking && (
+                      <div className="mt-4 flex items-center gap-2 text-primary-400">
+                        <div className="flex items-center gap-1">
+                          <span className="w-1 h-3 bg-primary-400 rounded-full animate-pulse" />
+                          <span className="w-1 h-4 bg-primary-400 rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
+                          <span className="w-1 h-2 bg-primary-400 rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
+                        </div>
+                        <span className="text-sm">Speaking...</span>
                       </div>
-                      <span className="text-sm">Speaking...</span>
-                    </div>
-                  )}
-                </div>
-              </Card>
-            </div>
+                    )}
+                  </div>
+                </Card>
+              </div>
+            )}
 
             {/* Main Interview Area */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className={embedTrainedAvatar ? 'space-y-6' : 'lg:col-span-2 space-y-6'}>
               {/* Intro Phase */}
               {phase === 'intro' && (
                 <Card className="bg-gray-800 border-gray-700">
@@ -443,19 +450,50 @@ const InterviewRoom = () => {
                   {/* Question Display */}
                   <Card className="bg-gray-800 border-gray-700">
                     <div className="p-6">
-                      <div className="flex items-start justify-between gap-4 mb-4">
-                        <span className="text-sm text-primary-400 font-medium">
-                          Question {currentQuestionIndex + 1}
-                        </span>
-                        {phase === 'answering' && session.settings?.showTimer && (
-                          <Timer
-                            duration={currentQuestion?.timeLimit || 120}
-                            onTimeUp={handleTimeUp}
-                            size="sm"
-                          />
+                      <div className={embedTrainedAvatar ? 'flex flex-col sm:flex-row gap-6' : ''}>
+                        {embedTrainedAvatar && (
+                          <div className="w-full sm:w-72">
+                            <AIAvatar
+                              avatarVideo={avatarVideo}
+                              avatarImage={avatarImage}
+                              avatarName={avatarName}
+                              text={phase === 'question' ? currentQuestion?.text : null}
+                              autoSpeak={phase === 'question'}
+                              showControls={false}
+                              showSubtitles={false}
+                              size="inline"
+                              onSpeechEnd={beginAnswering}
+                            />
+
+                            {isAISpeaking && (
+                              <div className="mt-3 flex items-center gap-2 text-primary-400">
+                                <div className="flex items-center gap-1">
+                                  <span className="w-1 h-3 bg-primary-400 rounded-full animate-pulse" />
+                                  <span className="w-1 h-4 bg-primary-400 rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
+                                  <span className="w-1 h-2 bg-primary-400 rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
+                                </div>
+                                <span className="text-sm">Speaking...</span>
+                              </div>
+                            )}
+                          </div>
                         )}
+
+                        <div className={embedTrainedAvatar ? 'flex-1' : ''}>
+                          <div className="flex items-start justify-between gap-4 mb-4">
+                            <span className="text-sm text-primary-400 font-medium">
+                              Question {currentQuestionIndex + 1}
+                            </span>
+                            {phase === 'answering' && session.settings?.showTimer && (
+                              <Timer
+                                duration={currentQuestion?.timeLimit || 120}
+                                onTimeUp={handleTimeUp}
+                                size="sm"
+                              />
+                            )}
+                          </div>
+                          <p className="text-lg text-white">{currentQuestion?.text}</p>
+                        </div>
                       </div>
-                      <p className="text-lg text-white">{currentQuestion?.text}</p>
                     </div>
                   </Card>
 

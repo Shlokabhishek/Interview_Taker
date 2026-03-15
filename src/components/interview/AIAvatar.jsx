@@ -11,6 +11,7 @@ const AIAvatar = ({
   onSpeechEnd,
   autoSpeak = true,
   showControls = true,
+  showSubtitles = true,
   size = 'lg',
   className = '',
 }) => {
@@ -89,7 +90,7 @@ const AIAvatar = ({
     return () => {
       stop();
     };
-  }, [text, autoSpeak, avatarVideo]);
+  }, [autoSpeak, avatarVideo, speak, stop, text]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -102,6 +103,7 @@ const AIAvatar = ({
     sm: 'w-48 h-48',
     md: 'w-64 h-64',
     lg: 'w-full aspect-video',
+    inline: 'w-full aspect-video',
   };
 
   return (
@@ -227,7 +229,7 @@ const AIAvatar = ({
       )}
 
       {/* Current text being spoken - Subtitle Style */}
-      {text && (
+      {showSubtitles && text && (
         <div className="mt-3 p-3 bg-black/80 backdrop-blur-sm rounded-lg">
           <p className="text-white text-sm leading-relaxed text-center">{text}</p>
         </div>

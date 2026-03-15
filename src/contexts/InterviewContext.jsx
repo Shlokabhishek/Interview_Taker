@@ -362,6 +362,32 @@ export const InterviewProvider = ({ children }) => {
     updateSession(sessionId, { avatarConfig });
   }, [updateSession]);
 
+  // Apply the interviewer's avatar config across their sessions (useful after training)
+  const applyAvatarConfigToMySessions = useCallback((avatarConfig) => {
+    if (!user?.id) return;
+
+    const stored = storage.get(`sessions_${user.id}`) || [];
+    const baseSessions = Array.isArray(stored) && stored.length ? stored : sessions;
+
+    const updatedSessions = baseSessions.map((session) => {
+      if (session.interviewerId && session.interviewerId !== user.id) return session;
+      return { ...session, avatarConfig, updatedAt: new Date().toISOString() };
+    });
+
+    const apiBaseUrl = getApiBaseUrl();
+    if (apiBaseUrl) {
+      updatedSessions.forEach((session) => {
+        if (session.interviewerId && session.interviewerId !== user.id) return;
+        apiFetchJson(`/sessions?id=${encodeURIComponent(session.id)}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ avatarConfig }),
+        }).catch(() => {});
+      });
+    }
+
+    saveSessions(updatedSessions);
+  }, [saveSessions, sessions, user?.id]);
+
   const value = {
     sessions,
     currentSession,
@@ -385,6 +411,7 @@ export const InterviewProvider = ({ children }) => {
     publishSession,
     closeSession,
     saveAvatarConfig,
+    applyAvatarConfigToMySessions,
   };
 
   return (

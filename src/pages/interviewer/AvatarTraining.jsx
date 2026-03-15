@@ -19,6 +19,7 @@ import {
   QrCode
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useInterview } from '../../contexts/InterviewContext';
 import { 
   Card, 
   CardHeader, 
@@ -33,6 +34,7 @@ import { getUserMedia, stopMediaStream, speakText, stopSpeech } from '../../util
 
 const AvatarTraining = () => {
   const { user, updateProfile } = useAuth();
+  const { applyAvatarConfigToMySessions } = useInterview();
   
   const [step, setStep] = useState(1);
   const [trainingMode, setTrainingMode] = useState('video'); // 'video' or 'photo'
@@ -245,16 +247,16 @@ const AvatarTraining = () => {
           setTrained(true);
           
           // Save avatar config to user profile
-          updateProfile({
-            avatarConfig: {
-              avatarVideo: avatarVideo,
-              avatarImage: avatarPreview,
-              avatarName: user?.name || 'AI Interviewer',
-              trainingMode: trainingMode,
-              trainedAt: new Date().toISOString(),
-            },
-            avatarTrained: true,
-          });
+          const newAvatarConfig = {
+            avatarVideo: avatarVideo,
+            avatarImage: avatarPreview,
+            avatarName: user?.name || 'AI Interviewer',
+            trainingMode: trainingMode,
+            trainedAt: new Date().toISOString(),
+          };
+
+          updateProfile({ avatarConfig: newAvatarConfig, avatarTrained: true });
+          applyAvatarConfigToMySessions(newAvatarConfig);
           
           return 100;
         }
