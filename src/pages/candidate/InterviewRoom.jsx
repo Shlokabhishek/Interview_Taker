@@ -49,6 +49,35 @@ const InterviewRoom = () => {
   
   const recognitionRef = useRef(null);
   const recordingRef = useRef(null);
+  const speechAdvanceTimeoutRef = useRef(null);
+  const phaseRef = useRef('intro');
+
+  useEffect(() => {
+    phaseRef.current = phase;
+  }, [phase]);
+
+  const clearSpeechAdvanceTimeout = useCallback(() => {
+    if (speechAdvanceTimeoutRef.current) {
+      clearTimeout(speechAdvanceTimeoutRef.current);
+      speechAdvanceTimeoutRef.current = null;
+    }
+  }, []);
+
+  const beginAnswering = useCallback(() => {
+    // Guard against double-fires (mobile TTS can fire both end+error, or we may hit the timeout fallback).
+    if (phaseRef.current !== 'question') return;
+
+    clearSpeechAdvanceTimeout();
+    setIsAISpeaking(false);
+    setPhase('answering');
+    setIsRecording(true);
+
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.start();
+      } catch (e) {}
+    }
+  }, [clearSpeechAdvanceTimeout]);
 
   const candidateId = useMemo(() => {
     const params = new URLSearchParams(location.search || '');
@@ -124,65 +153,67 @@ const InterviewRoom = () => {
           recognitionRef.current.stop();
         } catch (e) {}
       }
+      clearSpeechAdvanceTimeout();
       stopSpeech();
     };
-  }, []);
+  }, [clearSpeechAdvanceTimeout]);
 
   // Get current question
   const currentQuestion = session?.questions?.[currentQuestionIndex];
   const totalQuestions = session?.questions?.length || 0;
   const progress = totalQuestions > 0 ? ((currentQuestionIndex + 1) / totalQuestions) * 100 : 0;
 
+  // Ask a question
+  const askQuestion = useCallback((questionIndex) => {
+    const question = session?.questions?.[questionIndex];
+    if (!question) return;
+
+    clearSpeechAdvanceTimeout();
+    setCurrentQuestionIndex(questionIndex);
+    setPhase('question');
+    phaseRef.current = 'question';
+    setIsAISpeaking(true);
+    setCurrentTranscript('');
+    setTimeRemaining(question.timeLimit || 120);
+
+    // Fallback: if TTS "end" event never fires (common on some mobile browsers),
+    // move to answering after an estimated time.
+    const estimatedSpeakMs = Math.min(
+      20000,
+      Math.max(4500, (question.text || '').length * 55)
+    );
+
+    speechAdvanceTimeoutRef.current = setTimeout(() => {
+      beginAnswering();
+    }, estimatedSpeakMs);
+  }, [session, clearSpeechAdvanceTimeout, beginAnswering]);
+
   // Start the interview
   const startInterview = useCallback(() => {
-    setPhase('question');
+    // Use a non-question phase while the intro voice is playing,
+    // otherwise the avatar auto-speaks the first question immediately.
+    setPhase('processing');
+    phaseRef.current = 'processing';
     setIsAISpeaking(true);
-    
+
     // Speak intro message
     const introText = `Hello ${candidate?.name}! Welcome to your interview for ${session?.title}. I'll be asking you ${totalQuestions} questions today. Take your time with each answer, and speak clearly. Let's begin with the first question.`;
-    
+
     speakText(introText, () => {
       // After intro, ask first question
       setTimeout(() => {
         askQuestion(0);
       }, 1000);
     });
-  }, [candidate, session, totalQuestions]);
-
-  // Ask a question
-  const askQuestion = useCallback((questionIndex) => {
-    const question = session?.questions?.[questionIndex];
-    if (!question) return;
-
-    setCurrentQuestionIndex(questionIndex);
-    setPhase('question');
-    setIsAISpeaking(true);
-    setCurrentTranscript('');
-    setTimeRemaining(question.timeLimit || 120);
-
-    speakText(question.text, () => {
-      setIsAISpeaking(false);
-      setPhase('answering');
-      setIsRecording(true);
-      
-      // Start speech recognition
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.start();
-        } catch (e) {}
-      }
-    });
-  }, [session]);
-
-  // Handle time up
-  const handleTimeUp = useCallback(() => {
-    submitAnswer();
-  }, []);
+  }, [candidate, session, totalQuestions, askQuestion]);
 
   // Submit current answer
   const submitAnswer = useCallback(() => {
     setIsRecording(false);
     setPhase('processing');
+    phaseRef.current = 'processing';
+    setIsAISpeaking(false);
+    clearSpeechAdvanceTimeout();
     
     // Stop speech recognition
     if (recognitionRef.current) {
@@ -215,16 +246,18 @@ const InterviewRoom = () => {
     // Move to next question or finish
     setTimeout(() => {
       if (currentQuestionIndex < totalQuestions - 1) {
-        // Ask next question
-        speakText("Thank you. Let's move on to the next question.", () => {
-          askQuestion(currentQuestionIndex + 1);
-        });
+        askQuestion(currentQuestionIndex + 1);
       } else {
         // Finish interview
         finishInterview([...responses, response]);
       }
     }, 500);
-  }, [currentTranscript, currentQuestionIndex, session, totalQuestions, responses, askQuestion]);
+  }, [currentTranscript, currentQuestionIndex, session, totalQuestions, responses, askQuestion, clearSpeechAdvanceTimeout]);
+
+  // Handle time up
+  const handleTimeUp = useCallback(() => {
+    submitAnswer();
+  }, [submitAnswer]);
 
   // Finish the interview
   const finishInterview = useCallback((allResponses) => {
@@ -350,7 +383,7 @@ const InterviewRoom = () => {
                     autoSpeak={phase === 'question'}
                     showControls={false}
                     size="lg"
-                    onSpeechEnd={() => setIsAISpeaking(false)}
+                    onSpeechEnd={beginAnswering}
                   />
                   
                   {isAISpeaking && (
