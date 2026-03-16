@@ -1,4 +1,4 @@
-import React, { startTransition, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -81,6 +81,7 @@ const CreateSession = () => {
   );
 
   const hydratedRef = useRef(false);
+  const questionBankRef = useRef(null);
 
   const [step, setStep] = useState(1);
   const [sessionData, setSessionData] = useState(baseSessionState);
@@ -91,6 +92,7 @@ const CreateSession = () => {
   const [jdFileName, setJdFileName] = useState('');
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
   const [generationError, setGenerationError] = useState('');
+  const [actionMessage, setActionMessage] = useState('');
 
   useEffect(() => {
     if (hydratedRef.current) return;
@@ -198,6 +200,10 @@ const CreateSession = () => {
     setErrors((prev) => ({ ...prev, questionText: '', questions: '' }));
   };
 
+  const scrollToQuestionBank = () => {
+    questionBankRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   const upsertQuestion = () => {
     if (!currentQuestion.text.trim()) {
       setErrors((prev) => ({ ...prev, questionText: 'Question text is required' }));
@@ -215,25 +221,25 @@ const CreateSession = () => {
       }
     );
 
-    startTransition(() => {
-      setSessionData((prev) => {
-        const questions = editingQuestionId
-          ? prev.questions.map((question) =>
-              question.id === editingQuestionId ? nextQuestion : question
-            )
-          : [...prev.questions, nextQuestion];
+    setSessionData((prev) => {
+      const questions = editingQuestionId
+        ? prev.questions.map((question) =>
+            question.id === editingQuestionId ? nextQuestion : question
+          )
+        : [...prev.questions, nextQuestion];
 
-        return {
-          ...prev,
-          questions: questions.map((question, index) => ({
-            ...question,
-            order: index + 1,
-          })),
-        };
-      });
+      return {
+        ...prev,
+        questions: questions.map((question, index) => ({
+          ...question,
+          order: index + 1,
+        })),
+      };
     });
 
+    setActionMessage(editingQuestionId ? 'Question updated.' : 'Question added.');
     resetQuestionForm();
+    setTimeout(scrollToQuestionBank, 50);
   };
 
   const editQuestion = (question) => {
@@ -261,6 +267,8 @@ const CreateSession = () => {
     if (editingQuestionId === questionId) {
       resetQuestionForm();
     }
+
+    setActionMessage('Question removed.');
   };
 
   const handleJobDescriptionUpload = async (event) => {
@@ -309,32 +317,38 @@ const CreateSession = () => {
         return;
       }
 
-      startTransition(() => {
-        setSessionData((prev) => {
-          const existingQuestionTexts = new Set(
-            prev.questions.map((question) => question.text.trim().toLowerCase())
-          );
+      let addedCount = 0;
+      setSessionData((prev) => {
+        const existingQuestionTexts = new Set(
+          prev.questions.map((question) => question.text.trim().toLowerCase())
+        );
 
-          const mergedQuestions = [
-            ...prev.questions,
-            ...generatedQuestions.filter(
-              (question) => !existingQuestionTexts.has(question.text.trim().toLowerCase())
-            ),
-          ].map((question, index) =>
-            normalizeQuestion(question, {
-              order: index + 1,
-              defaultTimeLimit: prev.settings.defaultTimePerQuestion,
-              source: question.source || 'generated',
-            })
-          );
+        const newQuestions = generatedQuestions.filter(
+          (question) => !existingQuestionTexts.has(question.text.trim().toLowerCase())
+        );
+        addedCount = newQuestions.length;
 
-          return {
-            ...prev,
-            jobDescription,
-            questions: mergedQuestions,
-          };
-        });
+        const mergedQuestions = [...prev.questions, ...newQuestions].map((question, index) =>
+          normalizeQuestion(question, {
+            order: index + 1,
+            defaultTimeLimit: prev.settings.defaultTimePerQuestion,
+            source: question.source || 'generated',
+          })
+        );
+
+        return {
+          ...prev,
+          jobDescription,
+          questions: mergedQuestions,
+        };
       });
+
+      setActionMessage(
+        addedCount > 0
+          ? `Generated ${addedCount} question${addedCount === 1 ? '' : 's'}.`
+          : 'Questions were already present, so nothing new was added.'
+      );
+      setTimeout(scrollToQuestionBank, 50);
     } catch (error) {
       setGenerationError('Question generation failed. Please try again.');
     } finally {
@@ -538,6 +552,9 @@ const CreateSession = () => {
                 helperText={jdFileName ? `Loaded from ${jdFileName}` : 'Tip: include responsibilities, required tools, and seniority expectations for stronger questions.'}
               />
 
+              {actionMessage && !generationError && (
+                <Alert type="success" message={actionMessage} />
+              )}
               {generationError && <Alert type="warning" message={generationError} />}
 
               <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
@@ -559,6 +576,7 @@ const CreateSession = () => {
             </CardContent>
           </Card>
 
+          <div ref={questionBankRef}>
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between gap-4">
@@ -650,6 +668,7 @@ const CreateSession = () => {
               </Button>
             </CardContent>
           </Card>
+          </div>
 
           <Card>
             <CardHeader>
