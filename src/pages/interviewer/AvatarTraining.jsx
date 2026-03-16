@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Upload, 
   Camera, 
@@ -16,7 +17,8 @@ import {
   Smartphone,
   Copy,
   ExternalLink,
-  QrCode
+  QrCode,
+  Home
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useInterview } from '../../contexts/InterviewContext';
@@ -33,6 +35,7 @@ import { AIAvatar } from '../../components/interview';
 import { getUserMedia, stopMediaStream, speakText, stopSpeech } from '../../utils/mediaUtils';
 
 const AvatarTraining = () => {
+  const navigate = useNavigate();
   const { user, updateProfile } = useAuth();
   const { applyAvatarConfigToMySessions } = useInterview();
   
@@ -545,6 +548,9 @@ const AvatarTraining = () => {
                 <div className="flex justify-center gap-4">
                   <Button variant="secondary" icon={Play} onClick={testAvatar}>
                     Preview Avatar
+                  </Button>
+                  <Button variant="primary" icon={Home} onClick={() => navigate('/dashboard')}>
+                    Continue to Home Page
                   </Button>
                   <Button variant="primary" icon={RefreshCw} onClick={() => {
                     setStep(1);
