@@ -30,7 +30,7 @@ import {
   Alert,
   Progress
 } from '../../components/shared';
-import { formatDate, getPublicBaseUrl, getScoreColor, QUESTION_TYPE_LABELS, QUESTION_TYPE_COLORS } from '../../utils/helpers';
+import { formatDate, getApiBaseUrl, getPublicBaseUrl, getScoreColor, QUESTION_TYPE_LABELS, QUESTION_TYPE_COLORS } from '../../utils/helpers';
 
 const SessionDetail = () => {
   const { id } = useParams();
@@ -49,6 +49,8 @@ const SessionDetail = () => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [activeTab, setActiveTab] = useState('questions');
+  const [apiHealth, setApiHealth] = useState(null);
+  const [apiHealthError, setApiHealthError] = useState('');
 
   useEffect(() => {
     const foundSession = sessions.find(s => s.id === id);
@@ -57,6 +59,22 @@ const SessionDetail = () => {
       setCandidates(getCandidatesForSession(id));
     }
   }, [id, sessions, getCandidatesForSession]);
+
+  useEffect(() => {
+    const apiBase = getApiBaseUrl();
+    if (!apiBase) return;
+
+    fetch(`${apiBase}/health`)
+      .then((r) => r.json())
+      .then((json) => {
+        setApiHealth(json);
+        setApiHealthError('');
+      })
+      .catch((e) => {
+        setApiHealth(null);
+        setApiHealthError(e?.message || 'API health check failed');
+      });
+  }, []);
 
   if (!session) {
     return (
@@ -199,6 +217,21 @@ const SessionDetail = () => {
           type="success"
           title="Interview Link"
           message={`Share this link with candidates: ${getPublicBaseUrl()}/interview/${session.link}`}
+        />
+      )}
+
+      {/* Backend diagnostics (prevents confusing "Interview Not Found" for candidates) */}
+      {session.status === 'active' && (apiHealth?.ok || apiHealthError) && (
+        <Alert
+          type={apiHealthError || apiHealth?.kv === false ? 'warning' : 'info'}
+          title="Backend Status"
+          message={
+            apiHealthError
+              ? `Backend health check failed (${getApiBaseUrl() || '(disabled)'}): ${apiHealthError}`
+              : apiHealth?.kv === false
+                ? 'Backend storage is not configured (KV/Redis). Links may not work across devices after cold starts. Enable Vercel KV (or set a persistent Backend API URL) and recreate/resync this session.'
+                : `Backend ok (storage: ${apiHealth?.storage || (apiHealth?.kv ? 'kv' : 'unknown')}).`
+          }
         />
       )}
 

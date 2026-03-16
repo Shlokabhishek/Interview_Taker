@@ -1,6 +1,24 @@
 let kv = null;
 let kvLoadPromise = null;
 
+// Support Upstash env var names (common in non-Vercel setups) by aliasing them to Vercel KV names.
+// This lets @vercel/kv work when the project is configured with:
+// - UPSTASH_REDIS_REST_URL
+// - UPSTASH_REDIS_REST_TOKEN
+(() => {
+  try {
+    const env = process?.env;
+    if (!env) return;
+
+    const upstashUrl = env.UPSTASH_REDIS_REST_URL;
+    const upstashToken = env.UPSTASH_REDIS_REST_TOKEN;
+
+    if (!env.KV_REST_API_URL && upstashUrl) env.KV_REST_API_URL = upstashUrl;
+    if (!env.KV_REST_API_TOKEN && upstashToken) env.KV_REST_API_TOKEN = upstashToken;
+    if (!env.KV_REST_API_READ_ONLY_TOKEN && upstashToken) env.KV_REST_API_READ_ONLY_TOKEN = upstashToken;
+  } catch (e) {}
+})();
+
 const kvConfigured = () => Boolean(
   process?.env?.KV_REST_API_URL &&
   (process?.env?.KV_REST_API_TOKEN || process?.env?.KV_REST_API_READ_ONLY_TOKEN)

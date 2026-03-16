@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Mic, MicOff, Video, VideoOff, Circle, Square } from 'lucide-react';
 import { Button } from '../shared';
 import { getUserMedia, stopMediaStream, createMediaRecorder, blobToBase64 } from '../../utils/mediaUtils';
@@ -6,16 +6,19 @@ import { getUserMedia, stopMediaStream, createMediaRecorder, blobToBase64 } from
 const VideoRecorder = ({
   onRecordingComplete,
   onRecordingStart,
-  maxDuration = 300, // 5 minutes default
+  maxDuration = 300,
   autoStart = false,
+  recordingActive = false,
   showControls = true,
   showPreview = true,
   className = '',
 }) => {
   const videoRef = useRef(null);
+  const streamRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
   const timerRef = useRef(null);
+  const durationRef = useRef(0);
 
   const [stream, setStream] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
@@ -26,175 +29,183 @@ const VideoRecorder = ({
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [permissionGranted, setPermissionGranted] = useState(false);
 
-  // Initialize media stream
-  const initializeStream = useCallback(async () => {
-    setError(null);
-    const { stream: mediaStream, error: mediaError } = await getUserMedia(true, true);
-    
-    if (mediaError) {
-      setError(`Failed to access camera/microphone: ${mediaError}`);
-      return false;
-    }
-
-    setStream(mediaStream);
-    setPermissionGranted(true);
-    
+  const syncVideoElement = useCallback((mediaStream) => {
     if (videoRef.current) {
-      videoRef.current.srcObject = mediaStream;
+      videoRef.current.srcObject = mediaStream || null;
     }
-
-    return true;
   }, []);
 
-  // Start recording
-  const startRecording = useCallback(async () => {
-    if (!stream) {
-      const success = await initializeStream();
-      if (!success) return;
+  const clearTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  const initializeStream = useCallback(async () => {
+    if (streamRef.current) {
+      syncVideoElement(streamRef.current);
+      return streamRef.current;
     }
 
+    setError(null);
+    const { stream: mediaStream, error: mediaError } = await getUserMedia(true, true);
+
+    if (mediaError || !mediaStream) {
+      setError(`Failed to access camera/microphone: ${mediaError || 'Unknown error'}`);
+      return null;
+    }
+
+    streamRef.current = mediaStream;
+    setStream(mediaStream);
+    setPermissionGranted(true);
+    syncVideoElement(mediaStream);
+    return mediaStream;
+  }, [syncVideoElement]);
+
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+
+    clearTimer();
+    setIsRecording(false);
+    setIsPaused(false);
+  }, [clearTimer]);
+
+  const startTimer = useCallback(() => {
+    clearTimer();
+    timerRef.current = setInterval(() => {
+      setDuration((prev) => {
+        const next = prev + 1;
+        durationRef.current = next;
+        if (next >= maxDuration) {
+          stopRecording();
+          return maxDuration;
+        }
+        return next;
+      });
+    }, 1000);
+  }, [clearTimer, maxDuration, stopRecording]);
+
+  const startRecording = useCallback(async () => {
+    if (isRecording) return;
+
+    const activeStream = streamRef.current || (await initializeStream());
+    if (!activeStream) return;
+
     chunksRef.current = [];
-    const recorder = createMediaRecorder(stream);
-    
+    durationRef.current = 0;
+    setDuration(0);
+
+    const recorder = createMediaRecorder(activeStream);
     if (!recorder) {
       setError('Failed to create media recorder');
       return;
     }
 
-    recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) {
-        chunksRef.current.push(e.data);
+    recorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        chunksRef.current.push(event.data);
       }
     };
 
     recorder.onstop = async () => {
-      const blob = new Blob(chunksRef.current, { type: 'video/webm' });
+      const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'video/webm' });
       const base64 = await blobToBase64(blob);
-      
+
       if (onRecordingComplete) {
         onRecordingComplete({
           blob,
           base64,
-          duration,
-          type: 'video/webm',
+          duration: durationRef.current,
+          type: recorder.mimeType || 'video/webm',
         });
       }
     };
 
     mediaRecorderRef.current = recorder;
-    recorder.start(1000); // Collect data every second
+    recorder.start(1000);
     setIsRecording(true);
-    setDuration(0);
-
-    // Start timer
-    timerRef.current = setInterval(() => {
-      setDuration(prev => {
-        if (prev >= maxDuration) {
-          stopRecording();
-          return prev;
-        }
-        return prev + 1;
-      });
-    }, 1000);
+    setIsPaused(false);
+    startTimer();
 
     if (onRecordingStart) {
       onRecordingStart();
     }
-  }, [stream, initializeStream, maxDuration, duration, onRecordingComplete, onRecordingStart]);
+  }, [initializeStream, isRecording, onRecordingComplete, onRecordingStart, startTimer]);
 
-  // Stop recording
-  const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop();
-    }
-    
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-
-    setIsRecording(false);
-    setIsPaused(false);
-  }, []);
-
-  // Pause/Resume recording
   const togglePause = useCallback(() => {
     if (!mediaRecorderRef.current) return;
 
     if (isPaused) {
       mediaRecorderRef.current.resume();
-      timerRef.current = setInterval(() => {
-        setDuration(prev => prev + 1);
-      }, 1000);
+      startTimer();
     } else {
       mediaRecorderRef.current.pause();
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
+      clearTimer();
     }
-    setIsPaused(!isPaused);
-  }, [isPaused]);
 
-  // Toggle video
+    setIsPaused((prev) => !prev);
+  }, [clearTimer, isPaused, startTimer]);
+
   const toggleVideo = useCallback(() => {
-    if (stream) {
-      const videoTrack = stream.getVideoTracks()[0];
-      if (videoTrack) {
-        videoTrack.enabled = !videoTrack.enabled;
-        setVideoEnabled(videoTrack.enabled);
-      }
-    }
-  }, [stream]);
+    const activeStream = streamRef.current;
+    if (!activeStream) return;
 
-  // Toggle audio
+    const videoTrack = activeStream.getVideoTracks()[0];
+    if (videoTrack) {
+      videoTrack.enabled = !videoTrack.enabled;
+      setVideoEnabled(videoTrack.enabled);
+    }
+  }, []);
+
   const toggleAudio = useCallback(() => {
-    if (stream) {
-      const audioTrack = stream.getAudioTracks()[0];
-      if (audioTrack) {
-        audioTrack.enabled = !audioTrack.enabled;
-        setAudioEnabled(audioTrack.enabled);
-      }
-    }
-  }, [stream]);
+    const activeStream = streamRef.current;
+    if (!activeStream) return;
 
-  // Format duration
+    const audioTrack = activeStream.getAudioTracks()[0];
+    if (audioTrack) {
+      audioTrack.enabled = !audioTrack.enabled;
+      setAudioEnabled(audioTrack.enabled);
+    }
+  }, []);
+
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Initialize on mount
   useEffect(() => {
     initializeStream();
-    
-    return () => {
-      if (stream) {
-        stopMediaStream(stream);
-      }
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
-  }, []);
 
-  // Auto start recording
+    return () => {
+      clearTimer();
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+      }
+      stopMediaStream(streamRef.current);
+      streamRef.current = null;
+    };
+  }, [clearTimer, initializeStream]);
+
   useEffect(() => {
-    if (autoStart && permissionGranted && !isRecording) {
+    syncVideoElement(stream);
+  }, [stream, syncVideoElement]);
+
+  useEffect(() => {
+    const shouldRecord = recordingActive || autoStart;
+    if (shouldRecord && permissionGranted && !isRecording) {
       startRecording();
     }
-  }, [autoStart, permissionGranted]);
-
-  // Update video element when stream changes
-  useEffect(() => {
-    if (videoRef.current && stream) {
-      videoRef.current.srcObject = stream;
+    if (!shouldRecord && isRecording) {
+      stopRecording();
     }
-  }, [stream]);
+  }, [autoStart, permissionGranted, isRecording, recordingActive, startRecording, stopRecording]);
 
   return (
     <div className={`relative ${className}`}>
-      {/* Video Preview */}
       {showPreview && (
         <div className="relative bg-gray-900 rounded-xl overflow-hidden aspect-video">
           <video
@@ -204,8 +215,7 @@ const VideoRecorder = ({
             playsInline
             className="w-full h-full object-cover transform scale-x-[-1]"
           />
-          
-          {/* Recording indicator */}
+
           {isRecording && (
             <div className="absolute top-4 left-4 flex items-center gap-2 bg-black/60 px-3 py-1.5 rounded-full">
               <Circle className="w-3 h-3 text-red-500 fill-red-500 recording-indicator" />
@@ -215,7 +225,6 @@ const VideoRecorder = ({
             </div>
           )}
 
-          {/* Media controls overlay */}
           <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-3">
             <button
               onClick={toggleAudio}
@@ -223,28 +232,19 @@ const VideoRecorder = ({
                 audioEnabled ? 'bg-white/20 hover:bg-white/30' : 'bg-red-500 hover:bg-red-600'
               }`}
             >
-              {audioEnabled ? (
-                <Mic className="w-5 h-5 text-white" />
-              ) : (
-                <MicOff className="w-5 h-5 text-white" />
-              )}
+              {audioEnabled ? <Mic className="w-5 h-5 text-white" /> : <MicOff className="w-5 h-5 text-white" />}
             </button>
-            
+
             <button
               onClick={toggleVideo}
               className={`p-3 rounded-full transition-colors ${
                 videoEnabled ? 'bg-white/20 hover:bg-white/30' : 'bg-red-500 hover:bg-red-600'
               }`}
             >
-              {videoEnabled ? (
-                <Video className="w-5 h-5 text-white" />
-              ) : (
-                <VideoOff className="w-5 h-5 text-white" />
-              )}
+              {videoEnabled ? <Video className="w-5 h-5 text-white" /> : <VideoOff className="w-5 h-5 text-white" />}
             </button>
           </div>
 
-          {/* Error overlay */}
           {error && (
             <div className="absolute inset-0 flex items-center justify-center bg-gray-900/90">
               <div className="text-center p-6">
@@ -264,30 +264,18 @@ const VideoRecorder = ({
         </div>
       )}
 
-      {/* Recording Controls */}
       {showControls && permissionGranted && (
         <div className="flex items-center justify-center gap-4 mt-4">
           {!isRecording ? (
-            <Button
-              variant="danger"
-              icon={Circle}
-              onClick={startRecording}
-            >
+            <Button variant="danger" icon={Circle} onClick={startRecording}>
               Start Recording
             </Button>
           ) : (
             <>
-              <Button
-                variant="secondary"
-                onClick={togglePause}
-              >
+              <Button variant="secondary" onClick={togglePause}>
                 {isPaused ? 'Resume' : 'Pause'}
               </Button>
-              <Button
-                variant="danger"
-                icon={Square}
-                onClick={stopRecording}
-              >
+              <Button variant="danger" icon={Square} onClick={stopRecording}>
                 Stop Recording
               </Button>
             </>

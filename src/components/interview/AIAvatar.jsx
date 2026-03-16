@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Volume2, VolumeX, User, Video, Play } from 'lucide-react';
-import { Avatar } from '../shared';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Volume2, VolumeX, User, Video } from 'lucide-react';
 import { speakText, stopSpeech } from '../../utils/mediaUtils';
 
 const AIAvatar = ({
   avatarImage,
-  avatarVideo, // New prop for video URL
+  avatarVideo,
   avatarName = 'AI Interviewer',
   text,
   onSpeechEnd,
@@ -18,86 +17,98 @@ const AIAvatar = ({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-  const utteranceRef = useRef(null);
   const videoRef = useRef(null);
+  const activePlaybackIdRef = useRef(0);
+  const playbackModeRef = useRef(null);
 
-  // Play video if available
   const playVideo = useCallback(() => {
     if (avatarVideo && videoRef.current) {
       videoRef.current.currentTime = 0;
-      videoRef.current.play();
+      videoRef.current.muted = true;
+      videoRef.current.play().catch(() => {});
       setIsVideoPlaying(true);
-      setIsSpeaking(true);
     }
   }, [avatarVideo]);
 
-  // Handle video end
-  const handleVideoEnd = useCallback(() => {
+  const stopVisualPlayback = useCallback(() => {
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+    }
     setIsVideoPlaying(false);
-    setIsSpeaking(false);
-    if (onSpeechEnd) onSpeechEnd();
-  }, [onSpeechEnd]);
+  }, []);
 
-  // Speak the text (fallback when no video)
+  const finishPlayback = useCallback(
+    (playbackId) => {
+      if (playbackId !== activePlaybackIdRef.current) return;
+      playbackModeRef.current = null;
+      stopVisualPlayback();
+      setIsSpeaking(false);
+      if (onSpeechEnd) onSpeechEnd();
+    },
+    [onSpeechEnd, stopVisualPlayback]
+  );
+
   const speak = useCallback(() => {
-    // If video is available, play video instead
-    if (avatarVideo && videoRef.current) {
+    activePlaybackIdRef.current += 1;
+    const playbackId = activePlaybackIdRef.current;
+
+    if (!text && avatarVideo) {
+      playbackModeRef.current = 'video';
+      setIsSpeaking(true);
       playVideo();
       return;
     }
 
     if (!text || isMuted) {
+      playbackModeRef.current = null;
+      stopVisualPlayback();
+      setIsSpeaking(false);
       if (onSpeechEnd) onSpeechEnd();
       return;
     }
 
     setIsSpeaking(true);
-    
-    utteranceRef.current = speakText(text, () => {
-      setIsSpeaking(false);
-      if (onSpeechEnd) onSpeechEnd();
-    });
-  }, [text, isMuted, onSpeechEnd, avatarVideo, playVideo]);
-
-  // Stop speaking/playing
-  const stop = useCallback(() => {
-    stopSpeech();
-    if (videoRef.current) {
-      videoRef.current.pause();
-      videoRef.current.currentTime = 0;
+    playbackModeRef.current = 'tts';
+    if (avatarVideo) {
+      playVideo();
     }
-    setIsSpeaking(false);
-    setIsVideoPlaying(false);
-  }, []);
 
-  // Toggle mute
+    speakText(text, () => {
+      finishPlayback(playbackId);
+    });
+  }, [avatarVideo, finishPlayback, isMuted, onSpeechEnd, playVideo, stopVisualPlayback, text]);
+
+  const stop = useCallback(() => {
+    activePlaybackIdRef.current += 1;
+    playbackModeRef.current = null;
+    stopSpeech();
+    stopVisualPlayback();
+    setIsSpeaking(false);
+  }, [stopVisualPlayback]);
+
   const toggleMute = useCallback(() => {
     if (isSpeaking) {
       stop();
     }
-    setIsMuted(!isMuted);
-    if (videoRef.current) {
-      videoRef.current.muted = !isMuted;
-    }
-  }, [isMuted, isSpeaking, stop]);
+    setIsMuted((prev) => !prev);
+  }, [isSpeaking, stop]);
 
-  // Auto speak/play when text changes
   useEffect(() => {
     if (autoSpeak && (text || avatarVideo)) {
       speak();
     }
-    
+
     return () => {
       stop();
     };
   }, [autoSpeak, avatarVideo, speak, stop, text]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       stop();
     };
-  }, []);
+  }, [stop]);
 
   const avatarSizes = {
     sm: 'w-48 h-48',
@@ -108,20 +119,23 @@ const AIAvatar = ({
 
   return (
     <div className={`flex flex-col ${className}`}>
-      {/* Live Video Container */}
       <div className="relative w-full bg-gray-900 rounded-lg overflow-hidden shadow-2xl">
-        {/* Video Feed */}
         <div className={`relative ${avatarSizes[size]}`}>
-          {/* Real Video Playback */}
           {avatarVideo ? (
             <video
               ref={videoRef}
               src={avatarVideo}
               className="w-full h-full object-cover"
-              onEnded={handleVideoEnd}
-              onPlay={() => { setIsVideoPlaying(true); setIsSpeaking(true); }}
-              onPause={() => { setIsVideoPlaying(false); setIsSpeaking(false); }}
-              muted={isMuted}
+              onEnded={() => {
+                if (playbackModeRef.current === 'video') {
+                  finishPlayback(activePlaybackIdRef.current);
+                } else {
+                  setIsVideoPlaying(false);
+                }
+              }}
+              onPlay={() => setIsVideoPlaying(true)}
+              onPause={() => setIsVideoPlaying(false)}
+              muted
               playsInline
             />
           ) : avatarImage ? (
@@ -140,7 +154,7 @@ const AIAvatar = ({
                   <div className="text-white font-bold text-4xl">
                     {avatarName
                       .split(' ')
-                      .map(n => n[0])
+                      .map((part) => part[0])
                       .join('')
                       .toUpperCase()
                       .slice(0, 2)}
@@ -151,19 +165,16 @@ const AIAvatar = ({
             </div>
           )}
 
-          {/* Live Indicator */}
           <div className="absolute top-3 left-3 flex items-center gap-2 bg-red-600 px-3 py-1.5 rounded-full shadow-lg">
             <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
             <span className="text-white text-xs font-semibold tracking-wider">LIVE</span>
           </div>
 
-          {/* Interviewer Name Badge */}
           <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm px-3 py-2 rounded-lg">
             <p className="text-white text-sm font-medium">{avatarName}</p>
             <p className="text-gray-300 text-xs">AI Interviewer</p>
           </div>
 
-          {/* Speaking Indicator Overlay */}
           {isSpeaking && (
             <>
               <div className="absolute inset-0 border-4 border-green-500 animate-pulse pointer-events-none" />
@@ -180,7 +191,6 @@ const AIAvatar = ({
             </>
           )}
 
-          {/* Connection Quality Indicator */}
           <div className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-2.5 py-1.5 rounded">
             <Video className="w-3.5 h-3.5 text-green-400" />
             <div className="flex items-end gap-0.5">
@@ -192,27 +202,22 @@ const AIAvatar = ({
         </div>
       </div>
 
-      {/* Controls */}
       {showControls && (
         <div className="flex items-center justify-between mt-4 px-2">
           <div className="flex items-center gap-3">
             <button
               onClick={toggleMute}
               className={`p-2.5 rounded-full transition-all ${
-                isMuted 
-                  ? 'bg-red-500 text-white hover:bg-red-600' 
+                isMuted
+                  ? 'bg-red-500 text-white hover:bg-red-600'
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
               title={isMuted ? 'Unmute' : 'Mute'}
             >
-              {isMuted ? (
-                <VolumeX className="w-4 h-4" />
-              ) : (
-                <Volume2 className="w-4 h-4" />
-              )}
+              {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
             </button>
-            
-            {!isSpeaking && text && !isMuted && (
+
+            {!isSpeaking && (text || avatarVideo) && !isMuted && (
               <button
                 onClick={speak}
                 className="px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-xs font-medium"
@@ -223,12 +228,11 @@ const AIAvatar = ({
           </div>
 
           <div className="text-xs text-gray-500">
-            {isSpeaking ? '🎙️ Speaking...' : isMuted ? '🔇 Muted' : '✓ Connected'}
+            {isSpeaking ? 'Speaking...' : isMuted ? 'Muted' : isVideoPlaying ? 'Video Active' : 'Connected'}
           </div>
         </div>
       )}
 
-      {/* Current text being spoken - Subtitle Style */}
       {showSubtitles && text && (
         <div className="mt-3 p-3 bg-black/80 backdrop-blur-sm rounded-lg">
           <p className="text-white text-sm leading-relaxed text-center">{text}</p>

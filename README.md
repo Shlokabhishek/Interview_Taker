@@ -75,6 +75,8 @@ For sharing interview links on LAN, set:
 
 This repo includes Vercel Serverless Functions under `api/` for sessions/candidates. For persistence on Vercel, add **Vercel KV** to your project (Storage tab). Without KV, the API falls back to in-memory storage and links may stop working after cold starts.
 
+If you previously set `Backend API URL (Optional)` to `http://localhost:8787` (or similar) during local development, clear it before using the deployed site; otherwise sessions will never reach the deployed `/api` and candidates may see **Interview Not Found**.
+
 ### Demo Credentials
 
 **Interviewer Account:**

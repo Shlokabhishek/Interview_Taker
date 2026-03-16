@@ -197,6 +197,22 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } 
       />
+      <Route 
+        path="/sessions/:id/edit" 
+        element={
+          <ProtectedRoute>
+            <CreateSession />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/interviewer/sessions/:id/edit" 
+        element={
+          <ProtectedRoute>
+            <CreateSession />
+          </ProtectedRoute>
+        } 
+      />
       
       <Route 
         path="/avatar-training" 

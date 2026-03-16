@@ -8,5 +8,6 @@ module.exports = async (req, res) => {
     res.end();
     return;
   }
-  sendJson(res, 200, { ok: true, kv: kvEnabled() });
+  const kv = kvEnabled();
+  sendJson(res, 200, { ok: true, kv, storage: kv ? 'kv' : 'memory' });
 };

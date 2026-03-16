@@ -520,7 +520,7 @@ const AvatarTraining = () => {
                 avatarImage={avatarPreview}
                 avatarName={user?.name || 'AI Interviewer'}
                 text={isTesting ? null : null}
-                autoSpeak={false}
+                autoSpeak={isTesting}
                 showControls={false}
                 size="lg"
                 onSpeechEnd={() => setIsTesting(false)}

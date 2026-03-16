@@ -110,7 +110,28 @@ export const getApiBaseUrl = () => {
     const storedBase = storage.get('apiBaseUrl');
     const raw = (envBase || storedBase || '').trim();
     if (!raw) return import.meta?.env?.PROD ? '/api' : '';
-    return raw.endsWith('/') ? raw.slice(0, -1) : raw;
+
+    const normalized = raw.endsWith('/') ? raw.slice(0, -1) : raw;
+
+    // Avoid accidentally using a dev-only API base (e.g. http://localhost:8787) in production builds.
+    // This commonly causes "Interview Not Found" on deployed links because sessions never reach the deployed backend.
+    if (import.meta?.env?.PROD) {
+      const appHost = (() => {
+        try {
+          return window?.location?.hostname || '';
+        } catch (e) {
+          return '';
+        }
+      })();
+      const appIsLocalhost = /^(localhost|127\.0\.0\.1|\[::1\])$/i.test(appHost);
+
+      const looksLikeLocalhost =
+        /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?(\/|$)/i.test(normalized) ||
+        /^(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?(\/|$)/i.test(normalized);
+      if (!appIsLocalhost && looksLikeLocalhost) return '/api';
+    }
+
+    return normalized;
   } catch (e) {
     return import.meta?.env?.PROD ? '/api' : '';
   }
@@ -119,6 +140,7 @@ export const getApiBaseUrl = () => {
 // Question types
 export const QUESTION_TYPES = {
   TECHNICAL: 'technical',
+  SKILL_SPECIFIC: 'skill_specific',
   BEHAVIORAL: 'behavioral',
   SITUATIONAL: 'situational',
   HR: 'hr',
@@ -126,6 +148,7 @@ export const QUESTION_TYPES = {
 
 export const QUESTION_TYPE_LABELS = {
   [QUESTION_TYPES.TECHNICAL]: 'Technical',
+  [QUESTION_TYPES.SKILL_SPECIFIC]: 'Skill Specific',
   [QUESTION_TYPES.BEHAVIORAL]: 'Behavioral',
   [QUESTION_TYPES.SITUATIONAL]: 'Situational',
   [QUESTION_TYPES.HR]: 'HR/General',
@@ -133,6 +156,7 @@ export const QUESTION_TYPE_LABELS = {
 
 export const QUESTION_TYPE_COLORS = {
   [QUESTION_TYPES.TECHNICAL]: 'bg-blue-100 text-blue-700',
+  [QUESTION_TYPES.SKILL_SPECIFIC]: 'bg-cyan-100 text-cyan-700',
   [QUESTION_TYPES.BEHAVIORAL]: 'bg-purple-100 text-purple-700',
   [QUESTION_TYPES.SITUATIONAL]: 'bg-green-100 text-green-700',
   [QUESTION_TYPES.HR]: 'bg-orange-100 text-orange-700',

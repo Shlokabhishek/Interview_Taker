@@ -160,7 +160,7 @@ const Settings = () => {
               />
             </div>
             <p className="text-xs text-gray-500 -mt-3">
-              Use Public Base URL to generate interview links with your LAN IP instead of localhost.
+              Use Public Base URL to generate interview links with your LAN IP instead of localhost. Leave Backend API URL empty on Vercel to use `/api` (don’t set it to `localhost` on a deployed site).
             </p>
 
             {/* Avatar Training Section */}

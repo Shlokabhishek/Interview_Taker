@@ -168,7 +168,7 @@ const Sessions = () => {
                         variant="ghost"
                         size="sm"
                         icon={Edit}
-                        onClick={() => navigate(`/interviewer/sessions/${session.id}`)}
+                        onClick={() => navigate(`/interviewer/sessions/${session.id}/edit`)}
                       >
                         Edit
                       </Button>

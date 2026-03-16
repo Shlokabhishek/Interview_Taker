@@ -92,40 +92,59 @@ export const downloadBlob = (blob, filename) => {
   URL.revokeObjectURL(url);
 };
 
+const getPreferredVoice = () => {
+  const voices = window.speechSynthesis.getVoices();
+  return (
+    voices.find((voice) => /natural|samantha|zira|google/i.test(voice.name)) ||
+    voices.find((voice) => voice.lang?.toLowerCase().startsWith('en-in')) ||
+    voices.find((voice) => voice.lang?.toLowerCase().startsWith('en-us')) ||
+    voices.find((voice) => voice.lang?.toLowerCase().startsWith('en')) ||
+    null
+  );
+};
+
 // Simple speech synthesis for avatar
-export const speakText = (text, onEnd = null) => {
+export const speakText = (text, onEndOrOptions = null) => {
   if (!('speechSynthesis' in window)) {
     console.warn('Speech synthesis not supported');
-    if (onEnd) onEnd();
+    const fallbackOnEnd =
+      typeof onEndOrOptions === 'function' ? onEndOrOptions : onEndOrOptions?.onEnd;
+    if (fallbackOnEnd) fallbackOnEnd();
     return null;
   }
+
+  const options =
+    typeof onEndOrOptions === 'function'
+      ? { onEnd: onEndOrOptions }
+      : onEndOrOptions || {};
 
   // Cancel any ongoing speech
   window.speechSynthesis.cancel();
 
   const utterance = new SpeechSynthesisUtterance(text);
-  utterance.rate = 0.9;
-  utterance.pitch = 1;
-  utterance.volume = 1;
+  utterance.rate = options.rate || 0.92;
+  utterance.pitch = options.pitch || 1;
+  utterance.volume = options.volume || 1;
 
   // Try to use a natural-sounding voice
-  const voices = window.speechSynthesis.getVoices();
-  const preferredVoice = voices.find(v => 
-    v.name.includes('Natural') || 
-    v.name.includes('Google') ||
-    v.lang.startsWith('en')
-  );
+  const preferredVoice = getPreferredVoice();
   
   if (preferredVoice) {
     utterance.voice = preferredVoice;
   }
 
-  if (onEnd) {
-    utterance.onend = onEnd;
-    utterance.onerror = onEnd;
+  if (options.onStart) {
+    utterance.onstart = options.onStart;
+  }
+  if (options.onEnd) {
+    utterance.onend = options.onEnd;
+    utterance.onerror = options.onEnd;
   }
 
-  window.speechSynthesis.speak(utterance);
+  // Some browsers need a tick after cancel() before the next utterance is spoken.
+  setTimeout(() => {
+    window.speechSynthesis.speak(utterance);
+  }, 25);
   
   return utterance;
 };

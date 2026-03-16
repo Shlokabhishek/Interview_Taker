@@ -2,11 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { 
   ChevronRight,
-  Clock,
-  Mic,
-  MicOff,
   Video,
-  VideoOff,
   Send,
   AlertCircle
 } from 'lucide-react';
@@ -17,12 +13,12 @@ import {
   Button,
   Progress,
   Loading,
-  Alert
+  Alert,
+  Textarea
 } from '../../components/shared';
 import { VideoRecorder, AIAvatar, Timer } from '../../components/interview';
 import { analyzeResponse, generateInterviewSummary } from '../../utils/aiAnalysis';
 import { speakText, stopSpeech, createSpeechRecognition } from '../../utils/mediaUtils';
-import { formatDuration } from '../../utils/helpers';
 
 const InterviewRoom = () => {
   const { link } = useParams();
@@ -41,7 +37,7 @@ const InterviewRoom = () => {
   const [currentTranscript, setCurrentTranscript] = useState('');
   const [isAISpeaking, setIsAISpeaking] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(0);
+  const [speechRecognitionSupported, setSpeechRecognitionSupported] = useState(true);
   
   // Media state
   const [videoEnabled, setVideoEnabled] = useState(true);
@@ -128,6 +124,7 @@ const InterviewRoom = () => {
   useEffect(() => {
     const recognition = createSpeechRecognition();
     if (recognition) {
+      setSpeechRecognitionSupported(true);
       recognition.onresult = (event) => {
         let finalTranscript = '';
         for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -136,7 +133,7 @@ const InterviewRoom = () => {
           }
         }
         if (finalTranscript) {
-          setCurrentTranscript(prev => prev + ' ' + finalTranscript);
+          setCurrentTranscript((prev) => [prev, finalTranscript].filter(Boolean).join(' ').trim());
         }
       };
       
@@ -145,6 +142,8 @@ const InterviewRoom = () => {
       };
       
       recognitionRef.current = recognition;
+    } else {
+      setSpeechRecognitionSupported(false);
     }
 
     return () => {
@@ -179,7 +178,6 @@ const InterviewRoom = () => {
     phaseRef.current = 'question';
     setIsAISpeaking(true);
     setCurrentTranscript('');
-    setTimeRemaining(question.timeLimit || 120);
 
     // Fallback: if TTS "end" event never fires (common on some mobile browsers),
     // move to answering after an estimated time.
@@ -214,6 +212,12 @@ const InterviewRoom = () => {
 
   // Submit current answer
   const submitAnswer = useCallback(() => {
+    if (phaseRef.current === 'processing' || phaseRef.current === 'complete') {
+      return;
+    }
+
+    const normalizedTranscript = currentTranscript.trim();
+
     setIsRecording(false);
     setPhase('processing');
     phaseRef.current = 'processing';
@@ -230,7 +234,7 @@ const InterviewRoom = () => {
     // Analyze response
     const question = session?.questions?.[currentQuestionIndex];
     const analysis = analyzeResponse(
-      currentTranscript,
+      normalizedTranscript,
       question?.text,
       question?.expectedKeywords || [],
       question?.weight || 1
@@ -241,7 +245,7 @@ const InterviewRoom = () => {
       questionId: question?.id,
       questionIndex: currentQuestionIndex,
       questionText: question?.text,
-      answer: currentTranscript,
+      answer: normalizedTranscript,
       analysis,
       timestamp: new Date().toISOString(),
     };
@@ -506,19 +510,32 @@ const InterviewRoom = () => {
                         }}
                         onRecordingStart={() => setIsRecording(true)}
                         maxDuration={currentQuestion?.timeLimit || 120}
-                        autoStart={phase === 'answering'}
+                        recordingActive={phase === 'answering'}
                         showControls={false}
                         showPreview={true}
                       />
                     </div>
 
-                    {/* Transcript Preview */}
-                    {phase === 'answering' && currentTranscript && (
-                      <div className="px-4 pb-4">
-                        <div className="p-4 bg-gray-700/50 rounded-lg">
-                          <p className="text-sm text-gray-400 mb-2">Your response (transcribed):</p>
-                          <p className="text-white text-sm">{currentTranscript}</p>
-                        </div>
+                    {phase === 'answering' && (
+                      <div className="px-4 pb-4 space-y-3">
+                        {!speechRecognitionSupported && (
+                          <Alert
+                            type="warning"
+                            message="Live speech transcription is not supported in this browser. You can still answer verbally and type notes below if needed."
+                          />
+                        )}
+
+                        <Textarea
+                          label="Your response"
+                          value={currentTranscript}
+                          onChange={(event) => setCurrentTranscript(event.target.value)}
+                          rows={5}
+                          helperText={
+                            speechRecognitionSupported
+                              ? 'You can edit the live transcript before submitting.'
+                              : 'Type your answer here if transcription is unavailable.'
+                          }
+                        />
                       </div>
                     )}
 
