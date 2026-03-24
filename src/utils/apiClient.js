@@ -1,10 +1,8 @@
-import { getApiBaseUrl } from './helpers';
+import { getApiBaseUrl, storage } from './helpers';
 
-export const apiFetchJson = async (path, options = {}) => {
-  const base = getApiBaseUrl();
-  if (!base) throw new Error('API base URL not configured');
+const buildUrl = (base, path) => `${base}${path.startsWith('/') ? '' : '/'}${path}`;
 
-  const url = `${base}${path.startsWith('/') ? '' : '/'}${path}`;
+const fetchJson = async (url, options) => {
   const res = await fetch(url, {
     ...options,
     headers: {
@@ -19,5 +17,29 @@ export const apiFetchJson = async (path, options = {}) => {
   }
 
   return res.json();
+};
+
+export const apiFetchJson = async (path, options = {}) => {
+  const base = getApiBaseUrl();
+  if (!base) throw new Error('API base URL not configured');
+
+  try {
+    return await fetchJson(buildUrl(base, path), options);
+  } catch (error) {
+    const canFallbackToSameOriginApi =
+      import.meta?.env?.PROD &&
+      base !== '/api' &&
+      /^https?:\/\//i.test(base);
+
+    if (!canFallbackToSameOriginApi) {
+      throw error;
+    }
+
+    const fallbackResult = await fetchJson(buildUrl('/api', path), options);
+
+    // Clear stale custom API base so future requests keep using the working same-origin /api.
+    storage.remove('apiBaseUrl');
+    return fallbackResult;
+  }
 };
 

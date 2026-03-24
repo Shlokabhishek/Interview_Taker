@@ -1,85 +1,102 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { storage, generateId } from '../utils/helpers';
+import { supabase, isSupabaseConfigured } from '../utils/supabaseClient';
 
 const AuthContext = createContext(null);
 
-// Mock users for demo
-const DEMO_USERS = [
-  {
-    id: 'hr-1',
-    email: 'hr@company.com',
-    password: 'demo123',
-    name: 'Sarah Johnson',
-    role: 'interviewer',
-    company: 'TechCorp Inc.',
-    avatar: null,
-  },
-  {
-    id: 'hr-2',
-    email: 'admin@company.com',
-    password: 'demo123',
-    name: 'Michael Chen',
-    role: 'interviewer',
-    company: 'TechCorp Inc.',
-    avatar: null,
-  },
-];
+const mapAuthUserToAppUser = (authUser) => {
+  if (!authUser) return null;
+
+  const metadata = authUser.user_metadata || {};
+
+  return {
+    id: authUser.id,
+    email: authUser.email || '',
+    name: metadata.name || authUser.email?.split('@')?.[0] || 'Interviewer',
+    role: metadata.role || 'interviewer',
+    company: metadata.company || '',
+    avatarConfig: metadata.avatarConfig || null,
+    avatarTrained: Boolean(metadata.avatarTrained),
+    rawUserMetadata: metadata,
+  };
+};
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Initialize auth state from storage
   useEffect(() => {
-    const storedUser = storage.get('currentUser');
-    if (storedUser) {
-      setUser(storedUser);
+    let mounted = true;
+
+    const initializeAuth = async () => {
+      if (!isSupabaseConfigured || !supabase) {
+        if (mounted) {
+          setUser(null);
+          setLoading(false);
+        }
+        return;
+      }
+
+      const { data, error: sessionError } = await supabase.auth.getSession();
+      if (mounted) {
+        if (sessionError) {
+          setError(sessionError.message || 'Unable to initialize authentication');
+        }
+        setUser(mapAuthUserToAppUser(data?.session?.user || null));
+        setLoading(false);
+      }
+    };
+
+    initializeAuth();
+
+    if (!isSupabaseConfigured || !supabase) {
+      return () => {
+        mounted = false;
+      };
     }
-    setLoading(false);
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
+      setUser(mapAuthUserToAppUser(session?.user || null));
+      setLoading(false);
+    });
+
+    return () => {
+      mounted = false;
+      subscription?.unsubscribe();
+    };
   }, []);
 
-  // Login function
-  const login = useCallback(async (email, password, role = 'interviewer') => {
+  const login = useCallback(async (email, password) => {
     setError(null);
     setLoading(true);
 
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Check demo users
-      const demoUser = DEMO_USERS.find(
-        u => u.email === email && u.password === password
-      );
-
-      if (demoUser) {
-        const userData = { ...demoUser };
-        delete userData.password;
-        setUser(userData);
-        storage.set('currentUser', userData);
+      if (!isSupabaseConfigured || !supabase) {
+        const msg = 'Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.';
+        setError(msg);
         setLoading(false);
-        return { success: true, user: userData };
+        return { success: false, error: msg };
       }
 
-      // Check registered users in storage
-      const registeredUsers = storage.get('registeredUsers') || [];
-      const registeredUser = registeredUsers.find(
-        u => u.email === email && u.password === password
-      );
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-      if (registeredUser) {
-        const userData = { ...registeredUser };
-        delete userData.password;
-        setUser(userData);
-        storage.set('currentUser', userData);
+      if (authError) {
+        const msg = authError.message || 'Invalid email or password';
+        setError(msg);
         setLoading(false);
-        return { success: true, user: userData };
+        return { success: false, error: msg };
       }
 
-      setError('Invalid email or password');
+      const signedInUser = mapAuthUserToAppUser(data?.user || null);
+      setUser(signedInUser);
       setLoading(false);
-      return { success: false, error: 'Invalid email or password' };
+      return { success: true, user: signedInUser };
     } catch (err) {
       const errorMsg = err.message || 'Login failed';
       setError(errorMsg);
@@ -88,41 +105,54 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  // Register function
   const register = useCallback(async (userData) => {
     setError(null);
     setLoading(true);
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      const registeredUsers = storage.get('registeredUsers') || [];
-      
-      // Check if email already exists
-      if (registeredUsers.find(u => u.email === userData.email)) {
-        setError('Email already registered');
+      if (!isSupabaseConfigured || !supabase) {
+        const msg = 'Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.';
+        setError(msg);
         setLoading(false);
-        return { success: false, error: 'Email already registered' };
+        return { success: false, error: msg };
       }
 
-      const newUser = {
-        id: generateId(),
-        ...userData,
-        role: 'interviewer',
-        createdAt: new Date().toISOString(),
-      };
+      const { data, error: authError } = await supabase.auth.signUp({
+        email: userData.email,
+        password: userData.password,
+        options: {
+          data: {
+            name: userData.name,
+            company: userData.company,
+            role: 'interviewer',
+          },
+        },
+      });
 
-      registeredUsers.push(newUser);
-      storage.set('registeredUsers', registeredUsers);
+      if (authError) {
+        const msg = authError.message || 'Registration failed';
+        setError(msg);
+        setLoading(false);
+        return { success: false, error: msg };
+      }
 
-      // Auto login after registration
-      const loginUser = { ...newUser };
-      delete loginUser.password;
-      setUser(loginUser);
-      storage.set('currentUser', loginUser);
+      const registeredUser = mapAuthUserToAppUser(data?.user || null);
+
+      // If email confirmation is enabled in Supabase, session can be null right after sign-up.
+      const requiresEmailConfirmation = !data?.session;
+      if (!requiresEmailConfirmation && registeredUser) {
+        setUser(registeredUser);
+      }
 
       setLoading(false);
-      return { success: true, user: loginUser };
+      return {
+        success: true,
+        user: registeredUser,
+        requiresEmailConfirmation,
+        message: requiresEmailConfirmation
+          ? 'Check your email to confirm your account, then sign in.'
+          : '',
+      };
     } catch (err) {
       const errorMsg = err.message || 'Registration failed';
       setError(errorMsg);
@@ -131,28 +161,58 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  // Logout function
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
     setUser(null);
-    storage.remove('currentUser');
   }, []);
 
-  // Update user profile
-  const updateProfile = useCallback((updates) => {
-    if (!user) return;
+  const updateProfile = useCallback(async (updates) => {
+    if (!user) return { success: false, error: 'No authenticated user' };
 
-    const updatedUser = { ...user, ...updates };
-    setUser(updatedUser);
-    storage.set('currentUser', updatedUser);
+    const nextUser = { ...user, ...updates };
+    setUser(nextUser);
 
-    // Also update in registered users if applicable
-    const registeredUsers = storage.get('registeredUsers') || [];
-    const userIndex = registeredUsers.findIndex(u => u.id === user.id);
-    if (userIndex !== -1) {
-      registeredUsers[userIndex] = { ...registeredUsers[userIndex], ...updates };
-      storage.set('registeredUsers', registeredUsers);
+    if (!supabase) {
+      return { success: false, error: 'Supabase is not configured' };
     }
+
+    const mergedMetadata = {
+      ...(user.rawUserMetadata || {}),
+      ...(updates?.name !== undefined ? { name: updates.name } : {}),
+      ...(updates?.company !== undefined ? { company: updates.company } : {}),
+      ...(updates?.avatarConfig !== undefined ? { avatarConfig: updates.avatarConfig } : {}),
+      ...(updates?.avatarTrained !== undefined ? { avatarTrained: updates.avatarTrained } : {}),
+    };
+
+    const { data, error: profileError } = await supabase.auth.updateUser({
+      ...(updates?.email ? { email: updates.email } : {}),
+      data: mergedMetadata,
+    });
+
+    if (profileError) {
+      setError(profileError.message || 'Failed to update profile');
+      setUser(user);
+      return { success: false, error: profileError.message || 'Failed to update profile' };
+    }
+
+    const refreshedUser = mapAuthUserToAppUser(data?.user || null) || nextUser;
+    setUser(refreshedUser);
+    return { success: true, user: refreshedUser };
   }, [user]);
+
+  const changePassword = useCallback(async (newPassword) => {
+    if (!supabase) return { success: false, error: 'Supabase is not configured' };
+
+    const { error: passwordError } = await supabase.auth.updateUser({ password: newPassword });
+    if (passwordError) {
+      setError(passwordError.message || 'Unable to update password');
+      return { success: false, error: passwordError.message || 'Unable to update password' };
+    }
+
+    return { success: true };
+  }, []);
 
   const value = {
     user,
@@ -162,8 +222,10 @@ export const AuthProvider = ({ children }) => {
     logout,
     register,
     updateProfile,
+    changePassword,
     isAuthenticated: !!user,
     isInterviewer: user?.role === 'interviewer',
+    isSupabaseConfigured,
   };
 
   return (

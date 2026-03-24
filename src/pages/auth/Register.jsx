@@ -18,12 +18,14 @@ const Register = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
+  const [infoMessage, setInfoMessage] = useState('');
 
   const handleChange = (e) => {
     setFormData(prev => ({
       ...prev,
       [e.target.name]: e.target.value,
     }));
+    setInfoMessage('');
     
     // Clear error for this field
     if (errors[e.target.name]) {
@@ -75,7 +77,11 @@ const Register = () => {
     });
     
     if (result.success) {
-      navigate('/interviewer/dashboard');
+      if (result.requiresEmailConfirmation) {
+        setInfoMessage(result.message || 'Check your email to confirm your account, then sign in.');
+      } else {
+        navigate('/interviewer/dashboard');
+      }
     } else {
       setErrors({ form: result.error });
     }
@@ -99,6 +105,10 @@ const Register = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             {errors.form && (
               <Alert type="error" message={errors.form} />
+            )}
+
+            {infoMessage && (
+              <Alert type="info" message={infoMessage} />
             )}
 
             <Input

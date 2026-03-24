@@ -177,11 +177,11 @@ const CandidateRegistration = () => {
                   <p className="text-xs font-medium text-gray-700 mb-1">Diagnostics</p>
                   <p className="text-xs text-gray-600">API base: {getApiBaseUrl() || '(disabled)'}</p>
                   {apiHealth && (
-                    <p className="text-xs text-gray-600">API health: ok={String(apiHealth.ok)} kv={String(apiHealth.kv)}</p>
+                    <p className="text-xs text-gray-600">API health: ok={String(apiHealth.ok)} mongo={String(apiHealth.mongo)}</p>
                   )}
-                  {apiHealth?.ok && apiHealth?.kv === false && (
+                  {apiHealth?.ok && apiHealth?.mongo === false && (
                     <p className="text-xs text-yellow-700 mt-1">
-                      Backend storage is not configured. Enable Vercel KV and redeploy, then create the session again.
+                      Backend storage is not configured. Set MONGODB_URI in your deployment and redeploy, then create the session again.
                     </p>
                   )}
                   {apiHealthError && (

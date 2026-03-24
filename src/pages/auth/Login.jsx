@@ -136,14 +136,11 @@ const Login = () => {
             </p>
           </div>
 
-          {/* Demo credentials */}
+          {/* Auth provider hint */}
           <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <p className="text-xs text-gray-500 text-center mb-2">Demo Credentials</p>
+            <p className="text-xs text-gray-500 text-center mb-1">Authentication</p>
             <p className="text-xs text-gray-600 text-center">
-              Email: <span className="font-mono">hr@company.com</span>
-            </p>
-            <p className="text-xs text-gray-600 text-center">
-              Password: <span className="font-mono">demo123</span>
+              Sign in with an account created in your configured Supabase project.
             </p>
           </div>
         </Card>

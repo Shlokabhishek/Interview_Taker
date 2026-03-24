@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Algorithm and Flowchart User Manual</title>
+  <style>
+    :root {
+      --bg: #f4f6fb;
+      --paper: #ffffff;
+      --ink: #1e293b;
+      --muted: #64748b;
+      --line: #d6deeb;
+      --accent: #0f766e;
+      --accent-soft: #d1fae5;
+      --code-bg: #0b1220;
+      --code-ink: #d9e3f0;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 15% 10%, #e2f7f3 0%, transparent 42%),
+        radial-gradient(circle at 90% 5%, #e8f0ff 0%, transparent 38%),
+        var(--bg);
+      line-height: 1.6;
+    }
+
+    .container {
+      width: min(1200px, 94%);
+      margin: 0 auto;
+      padding: 2rem 0 4rem;
+    }
+
+    .title-page {
+      background: linear-gradient(130deg, #0f766e, #115e59 45%, #134e4a 100%);
+      color: #f8fafc;
+      border-radius: 18px;
+      padding: 2.4rem;
+      box-shadow: 0 20px 45px rgba(15, 118, 110, 0.25);
+      margin-bottom: 2rem;
+    }
+
+    h1, h2, h3 {
+      line-height: 1.25;
+      margin-top: 0;
+    }
+
+    h1 {
+      font-size: clamp(1.8rem, 3.2vw, 2.8rem);
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      margin: 0 0 1rem;
+      font-size: clamp(1rem, 2vw, 1.3rem);
+      opacity: 0.95;
+      font-weight: 600;
+    }
+
+    .intro-text {
+      margin: 0;
+      max-width: 74ch;
+      opacity: 0.95;
+    }
+
+    .panel {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 1.2rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 8px 28px rgba(15, 23, 42, 0.06);
+    }
+
+    .toc ul {
+      margin: 0;
+      padding-left: 1.1rem;
+      columns: 2;
+      column-gap: 2rem;
+    }
+
+    .toc a {
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px dashed transparent;
+    }
+
+    .toc a:hover {
+      border-bottom-color: var(--accent);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.95rem;
+    }
+
+    th, td {
+      border: 1px solid var(--line);
+      padding: 0.6rem;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #eef2ff;
+    }
+
+    .symbol-grid,
+    .algorithm-grid,
+    .tech-grid {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .symbol-grid {
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    }
+
+    .algorithm-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .tech-grid {
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    }
+
+    .symbol-card,
+    .algorithm-card,
+    .tech-card {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 1rem;
+    }
+
+    .symbol-label,
+    .tech-card h3 {
+      margin: 0 0 0.45rem;
+    }
+
+    .algorithm-title {
+      color: #0f172a;
+      margin-bottom: 0.35rem;
+    }
+
+    .algorithm-meta {
+      color: var(--muted);
+      font-size: 0.92rem;
+      margin-bottom: 0.7rem;
+    }
+
+    .method-list {
+      margin: 0.4rem 0 0.9rem;
+      padding-left: 1.1rem;
+    }
+
+    pre {
+      margin: 0.6rem 0 1rem;
+      background: var(--code-bg);
+      color: var(--code-ink);
+      padding: 0.85rem;
+      border-radius: 10px;
+      overflow-x: auto;
+      font-size: 0.9rem;
+    }
+
+    .flowchart-wrap {
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 0.6rem;
+      overflow-x: auto;
+    }
+
+    svg {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 0 auto;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      font-size: 12px;
+    }
+
+    .shape {
+      fill: #ffffff;
+      stroke: #1f2937;
+      stroke-width: 1.4;
+    }
+
+    .shape-start {
+      fill: #dcfce7;
+    }
+
+    .shape-process {
+      fill: #eff6ff;
+    }
+
+    .shape-io {
+      fill: #fef3c7;
+    }
+
+    .shape-decision {
+      fill: #fee2e2;
+    }
+
+    .shape-connector {
+      fill: #ede9fe;
+    }
+
+    .footnote {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-top: 0.6rem;
+    }
+
+    .top-link {
+      display: inline-block;
+      margin-top: 0.6rem;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.92rem;
+    }
+
+    @media (max-width: 760px) {
+      .toc ul {
+        columns: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="top">
+    <!-- Title Page -->
+    <header class="title-page panel" aria-labelledby="title">
+      <h1 id="title">Algorithm and Flowchart User Manual</h1>
+      <p class="subtitle">A Practical Guide to Algorithm Design and Flowchart Representation</p>
+      <p class="intro-text">
+        This manual introduces core algorithmic thinking and visual problem-solving through standardized flowcharts.
+        It is designed for beginners, students, and anyone who wants to learn how to express logic clearly using
+        step-by-step methods, pseudocode, and flowchart symbols.
+      </p>
+    </header>
+
+    <!-- Table of Contents -->
+    <nav class="panel toc" aria-label="Table of Contents">
+      <h2>Table of Contents</h2>
+      <ul>
+        <li><a href="#introduction">1. Introduction</a></li>
+        <li><a href="#symbols">2. Flowchart Symbols and Meanings</a></li>
+        <li><a href="#algorithms">3. Algorithms and Formulae Used in This Project</a></li>
+        <li><a href="#flowchart-implementation">4. Project Flowcharts (Proper Symbols)</a></li>
+        <li><a href="#technologies">5. Technologies Used</a></li>
+        <li><a href="#project-apis">6. APIs Used (Function and Why)</a></li>
+      </ul>
+    </nav>
+
+    <!-- Introduction -->
+    <section class="panel" id="introduction">
+      <h2>1. Introduction</h2>
+      <p>
+        An <strong>algorithm</strong> is a finite, ordered set of instructions used to solve a problem.
+        A <strong>flowchart</strong> is a graphical representation of those instructions, showing the control flow
+        from one step to the next.
+      </p>
+      <p>
+        Flowcharts are important because they simplify complex logic, help identify errors early,
+        and improve communication between developers, students, and stakeholders.
+      </p>
+      <h3>Advantages of Algorithms and Flowcharts</h3>
+      <ul>
+        <li>Improve clarity before coding begins.</li>
+        <li>Encourage systematic and modular problem-solving.</li>
+        <li>Make debugging and maintenance easier.</li>
+        <li>Serve as documentation for learning and collaboration.</li>
+      </ul>
+    </section>
+
+    <!-- Flowchart Symbols -->
+    <section class="panel" id="symbols">
+      <h2>2. Flowchart Symbols and Their Meanings</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Symbol</th>
+            <th>Meaning</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Oval</td><td>Start / End</td></tr>
+          <tr><td>Rectangle</td><td>Process</td></tr>
+          <tr><td>Parallelogram</td><td>Input / Output</td></tr>
+          <tr><td>Diamond</td><td>Decision</td></tr>
+          <tr><td>Arrow</td><td>Flow of Control</td></tr>
+          <tr><td>Connector</td><td>Linking different parts</td></tr>
+        </tbody>
+      </table>
+
+      <div class="symbol-grid">
+        <article class="symbol-card">
+          <h3 class="symbol-label">Oval (Start / End)</h3>
+          <svg viewBox="0 0 220 90" role="img" aria-label="Start end symbol">
+            <ellipse class="shape shape-start" cx="110" cy="45" rx="70" ry="28"></ellipse>
+            <text x="110" y="50" text-anchor="middle">Start / End</text>
+          </svg>
+        </article>
+
+        <article class="symbol-card">
+          <h3 class="symbol-label">Rectangle (Process)</h3>
+          <svg viewBox="0 0 220 90" role="img" aria-label="Process symbol">
+            <rect class="shape shape-process" x="45" y="20" width="130" height="48" rx="4"></rect>
+            <text x="110" y="50" text-anchor="middle">Process</text>
+          </svg>
+        </article>
+
+        <article class="symbol-card">
+          <h3 class="symbol-label">Parallelogram (Input / Output)</h3>
+          <svg viewBox="0 0 220 90" role="img" aria-label="Input output symbol">
+            <polygon class="shape shape-io" points="50,20 180,20 165,68 35,68"></polygon>
+            <text x="110" y="50" text-anchor="middle">Input / Output</text>
+          </svg>
+        </article>
+
+        <article class="symbol-card">
+          <h3 class="symbol-label">Diamond (Decision)</h3>
+          <svg viewBox="0 0 220 90" role="img" aria-label="Decision symbol">
+            <polygon class="shape shape-decision" points="110,12 176,45 110,78 44,45"></polygon>
+            <text x="110" y="49" text-anchor="middle">Decision?</text>
+          </svg>
+        </article>
+
+        <article class="symbol-card">
+          <h3 class="symbol-label">Arrow (Flow of Control)</h3>
+          <svg viewBox="0 0 220 90" role="img" aria-label="Arrow symbol">
+            <defs>
+              <marker id="arrsym" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                <path d="M0,0 L8,4 L0,8 z" fill="#1f2937"></path>
+              </marker>
+            </defs>
+            <line x1="35" y1="45" x2="185" y2="45" stroke="#1f2937" stroke-width="2" marker-end="url(#arrsym)"></line>
+            <text x="110" y="35" text-anchor="middle">Control Flow</text>
+          </svg>
+        </article>
+
+        <article class="symbol-card">
+          <h3 class="symbol-label">Connector</h3>
+          <svg viewBox="0 0 220 90" role="img" aria-label="Connector symbol">
+            <circle class="shape shape-connector" cx="110" cy="45" r="22"></circle>
+            <text x="110" y="49" text-anchor="middle">A</text>
+          </svg>
+        </article>
+      </div>
+    </section>
+
+    <!-- Algorithms and Formulae Used in This Project -->
+    <section class="panel" id="algorithms">
+      <h2>3. Algorithms and Formulae Used in This Project</h2>
+      <p>
+        This section includes only the algorithms that are actually used in the AI interview platform codebase.
+      </p>
+
+      <div class="algorithm-grid">
+        <article class="algorithm-card">
+          <h3 class="algorithm-title">3.1 Response Scoring Pipeline</h3>
+          <p class="algorithm-meta"><strong>Used in:</strong> src/utils/aiAnalysis.js (analyzeResponse)</p>
+          <p><strong>Purpose:</strong> Score each candidate answer using keyword relevance, confidence, and weighted aggregation.</p>
+          <h4>Core Formulae</h4>
+          <pre>keywordScore = round((matchedKeywords / expectedKeywords) * 100)
+accuracy = round(keywordScore * 0.6 + relevance * 0.4)
+overallScore = round((relevance * 0.25 + accuracy * 0.30 + confidence * 0.20 + keywordScore * 0.25) * weight)
+overallScore = clamp(overallScore, 0, 100)</pre>
+          <h4>Pseudocode</h4>
+          <pre>ANALYZE_RESPONSE(answer, question, expectedKeywords, weight)
+  keywordScore = keyword_match(answer, expectedKeywords)
+  skills = detect_skills(answer)
+  confidence = confidence_heuristic(answer)
+  relevance = relevance_overlap(answer, question)
+  accuracy = round(keywordScore * 0.6 + relevance * 0.4)
+  overall = round((relevance*0.25 + accuracy*0.30 + confidence*0.20 + keywordScore*0.25) * weight)
+  return clamp(overall, 0, 100), relevance, accuracy, confidence, skills</pre>
+        </article>
+
+        <article class="algorithm-card">
+          <h3 class="algorithm-title">3.2 Interview Summary Aggregation</h3>
+          <p class="algorithm-meta"><strong>Used in:</strong> src/utils/aiAnalysis.js (generateInterviewSummary)</p>
+          <p><strong>Purpose:</strong> Compute overall interview metrics from per-question analysis results.</p>
+          <h4>Core Formulae</h4>
+          <pre>avgOverall = round(sum(question.overallScore) / totalQuestions)
+avgRelevance = round(sum(question.relevance) / totalQuestions)
+avgAccuracy = round(sum(question.accuracy) / totalQuestions)
+avgConfidence = round(sum(question.confidence) / totalQuestions)
+skillAvg(skill) = round(sum(skillScores) / count(skillScores))</pre>
+          <h4>Pseudocode</h4>
+          <pre>GENERATE_SUMMARY(questionResults)
+  if empty -> return zeros
+  compute averages with reduce
+  aggregate skill scores per skill key
+  average each skill bucket
+  count strengths and improvements
+  sort by frequency and take top items
+  return summary object</pre>
+        </article>
+
+        <article class="algorithm-card">
+          <h3 class="algorithm-title">3.3 Candidate Ranking</h3>
+          <p class="algorithm-meta"><strong>Used in:</strong> src/utils/aiAnalysis.js (rankCandidates)</p>
+          <p><strong>Purpose:</strong> Rank candidates by score for interviewer dashboards.</p>
+          <h4>Core Formula</h4>
+          <pre>rank = position_in_descending_sort(overallScore) + 1</pre>
+          <h4>Pseudocode</h4>
+          <pre>RANK_CANDIDATES(candidates)
+  sorted = sort candidates by overallScore descending
+  for each candidate at index i:
+    candidate.rank = i + 1
+  return sorted</pre>
+        </article>
+
+        <article class="algorithm-card">
+          <h3 class="algorithm-title">3.4 Job Description to Question Generation</h3>
+          <p class="algorithm-meta"><strong>Used in:</strong> src/utils/questionGenerator.js (generateQuestionsFromJobDescription)</p>
+          <p><strong>Purpose:</strong> Convert job description text into structured technical, behavioral, and situational interview questions.</p>
+          <h4>Method</h4>
+          <ul class="method-list">
+            <li>Extract skills using regex-based technology patterns.</li>
+            <li>Extract responsibilities from bullets/verb-based lines.</li>
+            <li>Generate question templates using role + skill context.</li>
+            <li>Normalize fields and remove duplicate questions.</li>
+          </ul>
+          <h4>Pseudocode</h4>
+          <pre>GENERATE_QUESTIONS(jobDescription)
+  role = extract_role_title(jobDescription)
+  skills = extract_skills_with_regex(jobDescription)
+  responsibilities = extract_bullets(jobDescription)
+  draft = build_template_questions(role, skills, responsibilities)
+  normalized = normalize_question_fields(draft)
+  return unique_by_text(normalized)</pre>
+        </article>
+      </div>
+    </section>
+
+    <!-- Project Flowcharts -->
+    <section class="panel" id="flowchart-implementation">
+      <h2>4. Project Flowcharts (Proper Symbols)</h2>
+      <p>
+        The following flowcharts use standard symbols and represent real project workflows: AI response scoring and candidate ranking.
+      </p>
+
+      <h3>4.1 AI Response Scoring Flow</h3>
+      <div class="flowchart-wrap">
+        <svg viewBox="0 0 860 360" role="img" aria-label="AI response scoring flowchart">
+          <defs>
+            <marker id="arrProj1" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 z" fill="#1f2937"></path>
+            </marker>
+          </defs>
+          <ellipse class="shape shape-start" cx="80" cy="60" rx="55" ry="20"></ellipse>
+          <text x="80" y="65" text-anchor="middle">Start</text>
+
+          <polygon class="shape shape-io" points="160,38 320,38 305,82 145,82"></polygon>
+          <text x="232" y="64" text-anchor="middle">Input answer, question, keywords</text>
+
+          <rect class="shape shape-process" x="350" y="40" width="145" height="40"></rect>
+          <text x="423" y="65" text-anchor="middle">Keyword Match</text>
+
+          <rect class="shape shape-process" x="530" y="40" width="135" height="40"></rect>
+          <text x="598" y="65" text-anchor="middle">Relevance Score</text>
+
+          <rect class="shape shape-process" x="700" y="40" width="130" height="40"></rect>
+          <text x="765" y="65" text-anchor="middle">Confidence Score</text>
+
+          <rect class="shape shape-process" x="260" y="140" width="200" height="46"></rect>
+          <text x="360" y="159" text-anchor="middle">Accuracy = 0.6*keyword</text>
+          <text x="360" y="174" text-anchor="middle">+ 0.4*relevance</text>
+
+          <rect class="shape shape-process" x="500" y="140" width="290" height="56"></rect>
+          <text x="645" y="160" text-anchor="middle">Overall = (0.25*relevance + 0.30*accuracy</text>
+          <text x="645" y="176" text-anchor="middle">+ 0.20*confidence + 0.25*keyword) * weight</text>
+
+          <polygon class="shape shape-decision" points="645,214 730,256 645,298 560,256"></polygon>
+          <text x="645" y="260" text-anchor="middle">Clamp 0..100</text>
+
+          <polygon class="shape shape-io" points="300,238 510,238 490,292 280,292"></polygon>
+          <text x="395" y="270" text-anchor="middle">Output analysis object + scores</text>
+
+          <ellipse class="shape shape-start" cx="95" cy="265" rx="50" ry="18"></ellipse>
+          <text x="95" y="269" text-anchor="middle">End</text>
+
+          <line x1="135" y1="60" x2="145" y2="60" stroke="#1f2937" marker-end="url(#arrProj1)"></line>
+          <line x1="320" y1="60" x2="350" y2="60" stroke="#1f2937" marker-end="url(#arrProj1)"></line>
+          <line x1="495" y1="60" x2="530" y2="60" stroke="#1f2937" marker-end="url(#arrProj1)"></line>
+          <line x1="665" y1="60" x2="700" y2="60" stroke="#1f2937" marker-end="url(#arrProj1)"></line>
+          <line x1="765" y1="80" x2="765" y2="140" stroke="#1f2937"></line>
+          <line x1="765" y1="140" x2="790" y2="140" stroke="#1f2937"></line>
+          <line x1="790" y1="140" x2="790" y2="168" stroke="#1f2937" marker-end="url(#arrProj1)"></line>
+          <line x1="598" y1="80" x2="598" y2="140" stroke="#1f2937" marker-end="url(#arrProj1)"></line>
+          <line x1="423" y1="80" x2="423" y2="140" stroke="#1f2937"></line>
+          <line x1="423" y1="140" x2="460" y2="140" stroke="#1f2937" marker-end="url(#arrProj1)"></line>
+          <line x1="645" y1="196" x2="645" y2="214" stroke="#1f2937" marker-end="url(#arrProj1)"></line>
+          <line x1="560" y1="256" x2="510" y2="265" stroke="#1f2937" marker-end="url(#arrProj1)"></line>
+          <line x1="280" y1="265" x2="145" y2="265" stroke="#1f2937" marker-end="url(#arrProj1)"></line>
+        </svg>
+      </div>
+
+      <h3>4.2 Candidate Ranking Flow</h3>
+      <div class="flowchart-wrap">
+        <svg viewBox="0 0 760 250" role="img" aria-label="Candidate ranking flowchart">
+          <defs>
+            <marker id="arrProj2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 z" fill="#1f2937"></path>
+            </marker>
+          </defs>
+
+          <ellipse class="shape shape-start" cx="70" cy="60" rx="48" ry="18"></ellipse>
+          <text x="70" y="64" text-anchor="middle">Start</text>
+
+          <polygon class="shape shape-io" points="130,38 290,38 275,82 115,82"></polygon>
+          <text x="202" y="64" text-anchor="middle">Input candidates[]</text>
+
+          <rect class="shape shape-process" x="320" y="40" width="180" height="40"></rect>
+          <text x="410" y="65" text-anchor="middle">Sort by overallScore desc</text>
+
+          <rect class="shape shape-process" x="530" y="40" width="170" height="40"></rect>
+          <text x="615" y="65" text-anchor="middle">Assign rank = index + 1</text>
+
+          <polygon class="shape shape-io" points="350,138 520,138 500,188 330,188"></polygon>
+          <text x="425" y="168" text-anchor="middle">Output ranked candidates</text>
+
+          <ellipse class="shape shape-start" cx="110" cy="163" rx="48" ry="18"></ellipse>
+          <text x="110" y="167" text-anchor="middle">End</text>
+
+          <line x1="118" y1="60" x2="130" y2="60" stroke="#1f2937" marker-end="url(#arrProj2)"></line>
+          <line x1="290" y1="60" x2="320" y2="60" stroke="#1f2937" marker-end="url(#arrProj2)"></line>
+          <line x1="500" y1="60" x2="530" y2="60" stroke="#1f2937" marker-end="url(#arrProj2)"></line>
+          <line x1="615" y1="80" x2="615" y2="163" stroke="#1f2937"></line>
+          <line x1="615" y1="163" x2="520" y2="163" stroke="#1f2937" marker-end="url(#arrProj2)"></line>
+          <line x1="330" y1="163" x2="158" y2="163" stroke="#1f2937" marker-end="url(#arrProj2)"></line>
+        </svg>
+      </div>
+
+      <p class="footnote">
+        Symbol policy in these charts: Oval = Start/End, Parallelogram = Input/Output, Rectangle = Process,
+        Diamond = Decision, Arrow = Control flow.
+      </p>
+    </section>
+
+    <!-- Technologies Used -->
+    <section class="panel" id="technologies">
+      <h2>5. Technologies Used</h2>
+      <p>
+        This section lists the technologies used in this project and explains why each technology was selected
+        and how it contributes to the complete system.
+      </p>
+
+      <div class="tech-grid">
+        <article class="tech-card">
+          <h3>Frontend: HTML5, CSS3, JavaScript (ES6+)</h3>
+          <p><strong>Why chosen:</strong> These core web standards are stable, universally supported, and ideal for building accessible interfaces.</p>
+          <p><strong>Contribution:</strong> They provide semantic page structure, responsive styling, and client-side interaction logic throughout the app and this manual.</p>
+        </article>
+
+        <article class="tech-card">
+          <h3>Frontend Framework: React 18 + React Router DOM</h3>
+          <p><strong>Why chosen:</strong> React enables reusable component-based development, while React Router handles multi-page SPA navigation cleanly.</p>
+          <p><strong>Contribution:</strong> Powers candidate and interviewer portals, route-based page transitions, and stateful UI modules such as interview flows and dashboards.</p>
+        </article>
+
+        <article class="tech-card">
+          <h3>UI and Visualization: Tailwind CSS, Lucide React, Recharts</h3>
+          <p><strong>Why chosen:</strong> Tailwind accelerates consistent styling, Lucide provides scalable iconography, and Recharts simplifies chart rendering.</p>
+          <p><strong>Contribution:</strong> Delivers cohesive design, modern visual components, and data-driven dashboards for interviewer analytics.</p>
+        </article>
+
+        <article class="tech-card">
+          <h3>Backend Runtime: Node.js (v18+)</h3>
+          <p><strong>Why chosen:</strong> Node.js is efficient for JSON APIs, uses the same language as frontend logic, and has strong package ecosystem support.</p>
+          <p><strong>Contribution:</strong> Runs local backend services, processes session/candidate operations, and supports utility endpoints.</p>
+        </article>
+
+        <article class="tech-card">
+          <h3>Backend/API Layer: Vercel Serverless Functions</h3>
+          <p><strong>Why chosen:</strong> Serverless functions reduce infrastructure overhead and integrate directly with Vercel deployment.</p>
+          <p><strong>Contribution:</strong> Hosts API routes under api/ for sessions, candidates, and health checks in production.</p>
+        </article>
+
+        <article class="tech-card">
+          <h3>Backend Scripting: Python</h3>
+          <p><strong>Why chosen:</strong> Python is strong for automation and document-generation workflows.</p>
+          <p><strong>Contribution:</strong> Executes helper scripts for PPT creation, inspection, and symbol updates used in supporting workflows.</p>
+        </article>
+
+        <article class="tech-card">
+          <h3>Databases and Persistence: localStorage, JSON (db.json), Vercel KV</h3>
+          <p><strong>Why chosen:</strong> localStorage and JSON files are simple for development; Vercel KV adds cloud persistence for deployed serverless APIs.</p>
+          <p><strong>Contribution:</strong> Stores sessions/candidates locally during development and supports persistent shared interview data in deployment.</p>
+        </article>
+
+        <article class="tech-card">
+          <h3>AI/ML and Computer Vision: face-api.js + AI analysis utilities</h3>
+          <p><strong>Why chosen:</strong> face-api.js provides browser-based facial analysis capabilities; custom analysis utilities tailor scoring to interview needs.</p>
+          <p><strong>Contribution:</strong> Enables avatar-related intelligence and automated response analysis features in the interview process.</p>
+        </article>
+
+        <article class="tech-card">
+          <h3>Web APIs: Web Speech API, MediaRecorder API</h3>
+          <p><strong>Why chosen:</strong> Native browser APIs reduce external dependencies and provide direct speech/recording access.</p>
+          <p><strong>Contribution:</strong> Supports speech recognition/transcription and audio-video recording during candidate interviews.</p>
+        </article>
+
+        <article class="tech-card">
+          <h3>APIs and Third-Party Tools: Vite, ESLint, PostCSS, Autoprefixer, uuid, date-fns, mkcert, Vercel</h3>
+          <p><strong>Why chosen:</strong> These tools improve build speed, code quality, CSS compatibility, unique ID generation, date handling, local HTTPS support, and deployment.</p>
+          <p><strong>Contribution:</strong> They streamline development, maintain consistency, and provide reliable production hosting and API delivery.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- Project APIs -->
+    <section class="panel" id="project-apis">
+      <h2>6. APIs Used (Function and Why)</h2>
+      <p>
+        This project uses both backend HTTP APIs and browser APIs. The table below explains each API,
+        what function it performs, and why it is used.
+      </p>
+
+      <h3>6.1 Backend HTTP APIs (Vercel/Node)</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Endpoint</th>
+            <th>Methods</th>
+            <th>Function</th>
+            <th>Why Used in Project</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>/api/sessions</td>
+            <td>GET, POST, PATCH, DELETE</td>
+            <td>Create, read, update, and delete interview sessions.</td>
+            <td>Needed for interviewer session lifecycle management and editable interview setup.</td>
+          </tr>
+          <tr>
+            <td>/api/session-by-link</td>
+            <td>GET</td>
+            <td>Fetch session by candidate link token.</td>
+            <td>Lets candidates open interview links directly and load the correct session data.</td>
+          </tr>
+          <tr>
+            <td>/api/candidates</td>
+            <td>GET, POST, PATCH</td>
+            <td>Store and retrieve candidate records and status updates.</td>
+            <td>Required to track candidate progress, submissions, and final analysis.</td>
+          </tr>
+          <tr>
+            <td>/api/health</td>
+            <td>GET</td>
+            <td>Return service health and storage mode (KV or memory).</td>
+            <td>Used for operational checks and deployment diagnostics.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>6.2 Browser/Web APIs</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>API</th>
+            <th>Function</th>
+            <th>Why Used in Project</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>MediaDevices.getUserMedia</td>
+            <td>Capture camera and microphone streams.</td>
+            <td>Enables interview recording and avatar interaction input.</td>
+          </tr>
+          <tr>
+            <td>MediaRecorder</td>
+            <td>Record audio/video streams into blobs.</td>
+            <td>Required to capture candidate responses as media artifacts.</td>
+          </tr>
+          <tr>
+            <td>Web Speech API (SpeechRecognition)</td>
+            <td>Convert candidate speech to text.</td>
+            <td>Supports transcript-driven AI analysis and accessibility.</td>
+          </tr>
+          <tr>
+            <td>Speech Synthesis API</td>
+            <td>Generate interviewer avatar voice output.</td>
+            <td>Used for AI-led question narration in interview flow.</td>
+          </tr>
+          <tr>
+            <td>Fetch API</td>
+            <td>Send/receive JSON from backend endpoints.</td>
+            <td>Connects React frontend to sessions/candidates API services.</td>
+          </tr>
+          <tr>
+            <td>localStorage</td>
+            <td>Persist client-side app state and settings.</td>
+            <td>Provides lightweight storage in development or offline-style operation.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+</body>
+</html>

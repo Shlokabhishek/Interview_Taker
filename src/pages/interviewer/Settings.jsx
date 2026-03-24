@@ -27,7 +27,7 @@ import {
 import { storage } from '../../utils/helpers';
 
 const Settings = () => {
-  const { user, updateProfile, logout } = useAuth();
+  const { user, updateProfile, changePassword } = useAuth();
   
   const [activeTab, setActiveTab] = useState('profile');
   const [profileData, setProfileData] = useState({
@@ -54,15 +54,15 @@ const Settings = () => {
     setPasswordData(prev => ({ ...prev, [field]: value }));
   };
 
-  const saveProfile = () => {
-    updateProfile(profileData);
+  const saveProfile = async () => {
+    await updateProfile(profileData);
     storage.set('publicBaseUrl', publicBaseUrl.trim());
     storage.set('apiBaseUrl', apiBaseUrl.trim());
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
 
-  const changePassword = () => {
+  const handlePasswordChangeSubmit = async () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       setError('Passwords do not match');
       return;
@@ -72,7 +72,12 @@ const Settings = () => {
       return;
     }
     
-    // In a real app, this would call an API
+    const result = await changePassword(passwordData.newPassword);
+    if (!result.success) {
+      setError(result.error || 'Unable to update password');
+      return;
+    }
+
     setError('');
     setSaved(true);
     setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
@@ -250,7 +255,7 @@ const Settings = () => {
               </label>
 
               <div className="flex justify-end">
-                <Button variant="primary" onClick={changePassword}>
+                <Button variant="primary" onClick={handlePasswordChangeSubmit}>
                   Update Password
                 </Button>
               </div>

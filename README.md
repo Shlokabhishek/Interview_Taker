@@ -47,16 +47,27 @@ cd Interview_Taker
 npm install
 ```
 
-3. Start the development server:
+3. Configure environment variables:
+```bash
+cp .env.example .env
+```
+
+Set these required values:
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+- `MONGODB_URI`
+- `MONGODB_DB` (optional, defaults to `ai_interview_platform`)
+
+4. Start the development server:
 ```bash
 npm run dev
 ```
 
-4. Open `https://localhost:3001` in your browser
+5. Open `https://localhost:3001` in your browser
 
 ### Optional Backend (Cross-Device Results)
 
-By default this project stores sessions and candidates in browser `localStorage`, which means the interviewer will only see candidates from the same browser profile and exact origin (same protocol, host, and port).
+By default, development can still run without backend persistence, but for cross-device results and shareable links you should run the backend with MongoDB configured.
 
 To make sessions/candidates available across devices, run the included lightweight backend:
 
@@ -73,19 +84,9 @@ For sharing interview links on LAN, set:
 
 ### Vercel Deployment Notes
 
-This repo includes Vercel Serverless Functions under `api/` for sessions/candidates. For persistence on Vercel, add **Vercel KV** to your project (Storage tab). Without KV, the API falls back to in-memory storage and links may stop working after cold starts.
+This repo includes Vercel Serverless Functions under `api/` for sessions/candidates. For persistence on Vercel, add a MongoDB connection string as `MONGODB_URI` (and optional `MONGODB_DB`) in your Vercel project environment variables.
 
 If you previously set `Backend API URL (Optional)` to `http://localhost:8787` (or similar) during local development, clear it before using the deployed site; otherwise sessions will never reach the deployed `/api` and candidates may see **Interview Not Found**.
-
-### Demo Credentials
-
-**Interviewer Account:**
-- Email: `demo@interview.pro`
-- Password: `demo123`
-
-**HR Account:**
-- Email: `hr@company.com`
-- Password: `hr123`
 
 ## Project Structure
 

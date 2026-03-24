@@ -1,43 +1,4 @@
-let kv = null;
-let kvLoadPromise = null;
-
-// Support Upstash env var names (common in non-Vercel setups) by aliasing them to Vercel KV names.
-// This lets @vercel/kv work when the project is configured with:
-// - UPSTASH_REDIS_REST_URL
-// - UPSTASH_REDIS_REST_TOKEN
-(() => {
-  try {
-    const env = process?.env;
-    if (!env) return;
-
-    const upstashUrl = env.UPSTASH_REDIS_REST_URL;
-    const upstashToken = env.UPSTASH_REDIS_REST_TOKEN;
-
-    if (!env.KV_REST_API_URL && upstashUrl) env.KV_REST_API_URL = upstashUrl;
-    if (!env.KV_REST_API_TOKEN && upstashToken) env.KV_REST_API_TOKEN = upstashToken;
-    if (!env.KV_REST_API_READ_ONLY_TOKEN && upstashToken) env.KV_REST_API_READ_ONLY_TOKEN = upstashToken;
-  } catch (e) {}
-})();
-
-const kvConfigured = () => Boolean(
-  process?.env?.KV_REST_API_URL &&
-  (process?.env?.KV_REST_API_TOKEN || process?.env?.KV_REST_API_READ_ONLY_TOKEN)
-);
-
-const loadKv = async () => {
-  if (kv) return kv;
-  if (kvLoadPromise) return kvLoadPromise;
-
-  kvLoadPromise = import('@vercel/kv')
-    .then((mod) => mod?.kv || mod?.default?.kv || mod?.default || null)
-    .catch(() => null)
-    .then((client) => {
-      kv = client;
-      return kv;
-    });
-
-  return kvLoadPromise;
-};
+const { getMongoDb, mongoConfigured } = require('./_mongo.cjs');
 
 const memory = (globalThis.__INTERVIEW_PRO_STORE ||= {
   sessions: new Map(), // session:<id> -> session
@@ -48,15 +9,15 @@ const memory = (globalThis.__INTERVIEW_PRO_STORE ||= {
   allCandidates: new Set(), // candidateId
 });
 
-const kvEnabled = () => kvConfigured();
+const mongoEnabled = () => mongoConfigured();
 
-const kvOp = async (fn) => {
-  if (!kvConfigured()) return null;
-  const client = await loadKv();
-  if (!client) return null;
+const withCollection = async (name, fn) => {
+  const db = await getMongoDb();
+  if (!db) return null;
 
   try {
-    return await fn(client);
+    const collection = db.collection(name);
+    return await fn(collection);
   } catch (e) {
     return null;
   }
@@ -67,61 +28,55 @@ const getMemSet = (map, key) => {
   return map.get(key);
 };
 
-const getJson = async (key) => {
-  if (kvEnabled()) {
-    const value = await kvOp((client) => client.get(key));
-    if (value !== null && value !== undefined) return value;
-  }
-  if (key.startsWith('session:')) return memory.sessions.get(key) || null;
-  if (key.startsWith('candidate:')) return memory.candidates.get(key) || null;
-  return null;
-};
+const hydrateMemorySessionIndexes = (session) => {
+  if (!session?.id) return;
+  memory.sessions.set(`session:${session.id}`, session);
 
-const setJson = async (key, value) => {
-  if (key.startsWith('session:')) memory.sessions.set(key, value);
-  if (key.startsWith('candidate:')) memory.candidates.set(key, value);
-  if (kvEnabled()) {
-    await kvOp((client) => client.set(key, value));
+  if (session.link) {
+    memory.sessionByLink.set(session.link, session.id);
+  }
+
+  if (session.interviewerId) {
+    getMemSet(memory.sessionsByInterviewer, session.interviewerId).add(session.id);
   }
 };
 
-const delKey = async (key) => {
-  memory.sessions.delete(key);
-  memory.candidates.delete(key);
-  if (kvEnabled()) {
-    await kvOp((client) => client.del(key));
+const hydrateMemoryCandidateIndexes = (candidate) => {
+  if (!candidate?.id) return;
+  memory.candidates.set(`candidate:${candidate.id}`, candidate);
+  memory.allCandidates.add(candidate.id);
+
+  if (candidate.sessionId) {
+    getMemSet(memory.candidatesBySession, candidate.sessionId).add(candidate.id);
   }
 };
 
 const getSessionByLink = async (link) => {
   if (!link) return null;
 
-  const sessionId = kvEnabled()
-    ? await kvOp((client) => client.get(`sessionByLink:${link}`))
-    : null;
+  const mongoSession = await withCollection('sessions', (collection) => {
+    return collection.findOne({ link }, { projection: { _id: 0 } });
+  });
 
-  const resolvedSessionId = sessionId || memory.sessionByLink.get(link);
+  if (mongoSession) {
+    hydrateMemorySessionIndexes(mongoSession);
+    return mongoSession;
+  }
 
-  if (!resolvedSessionId) return null;
-  return getJson(`session:${resolvedSessionId}`);
+  const sessionId = memory.sessionByLink.get(link);
+  if (!sessionId) return null;
+  return memory.sessions.get(`session:${sessionId}`) || null;
 };
 
 const putSession = async (session) => {
-  const sessionKey = `session:${session.id}`;
-  await setJson(sessionKey, session);
+  if (!session?.id) return null;
 
-  if (session.link) {
-    memory.sessionByLink.set(session.link, session.id);
-    if (kvEnabled()) {
-      await kvOp((client) => client.set(`sessionByLink:${session.link}`, session.id));
-    }
-  }
+  hydrateMemorySessionIndexes(session);
 
-  if (session.interviewerId) {
-    getMemSet(memory.sessionsByInterviewer, session.interviewerId).add(session.id);
-    if (kvEnabled()) {
-      await kvOp((client) => client.sadd(`sessionsByInterviewer:${session.interviewerId}`, session.id));
-    }
+  if (mongoEnabled()) {
+    await withCollection('sessions', (collection) => {
+      return collection.updateOne({ id: session.id }, { $set: session }, { upsert: true });
+    });
   }
 
   return session;
@@ -130,101 +85,163 @@ const putSession = async (session) => {
 const listSessions = async (interviewerId) => {
   if (!interviewerId) return [];
 
-  const kvIds = kvEnabled()
-    ? await kvOp((client) => client.smembers(`sessionsByInterviewer:${interviewerId}`))
-    : null;
+  const mongoSessions = await withCollection('sessions', (collection) => {
+    return collection.find({ interviewerId }, { projection: { _id: 0 } }).toArray();
+  });
 
-  const ids = Array.isArray(kvIds)
-    ? kvIds
-    : Array.from(memory.sessionsByInterviewer.get(interviewerId) || []);
+  if (Array.isArray(mongoSessions)) {
+    mongoSessions.forEach(hydrateMemorySessionIndexes);
+    return mongoSessions;
+  }
 
+  const ids = Array.from(memory.sessionsByInterviewer.get(interviewerId) || []);
   if (!ids.length) return [];
 
-  const keys = ids.map((id) => `session:${id}`);
-  const kvSessions = kvEnabled() ? await kvOp((client) => client.mget(...keys)) : null;
-  const sessions = Array.isArray(kvSessions) ? kvSessions : keys.map((k) => memory.sessions.get(k));
-  return (sessions || []).filter(Boolean);
+  return ids
+    .map((id) => memory.sessions.get(`session:${id}`))
+    .filter(Boolean);
 };
 
 const patchSession = async (id, updates) => {
-  const existing = await getJson(`session:${id}`);
+  if (!id) return null;
+
+  const timestampedUpdates = {
+    ...(updates || {}),
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (mongoEnabled()) {
+    const updated = await withCollection('sessions', async (collection) => {
+      const existing = await collection.findOne({ id }, { projection: { _id: 0 } });
+      if (!existing) return null;
+
+      const next = { ...existing, ...timestampedUpdates };
+      await collection.updateOne({ id }, { $set: next }, { upsert: true });
+      return next;
+    });
+
+    if (updated) {
+      hydrateMemorySessionIndexes(updated);
+      return updated;
+    }
+  }
+
+  const existing = memory.sessions.get(`session:${id}`);
   if (!existing) return null;
-  const next = { ...existing, ...(updates || {}), updatedAt: new Date().toISOString() };
-  await putSession(next);
+
+  const next = { ...existing, ...timestampedUpdates };
+  hydrateMemorySessionIndexes(next);
   return next;
 };
 
 const deleteSession = async (id) => {
-  const existing = await getJson(`session:${id}`);
+  if (!id) return false;
+
+  const memoryExisting = memory.sessions.get(`session:${id}`) || null;
+
+  let mongoExisting = null;
+  if (mongoEnabled()) {
+    mongoExisting = await withCollection('sessions', async (collection) => {
+      const existing = await collection.findOne({ id }, { projection: { _id: 0 } });
+      if (!existing) return null;
+      await collection.deleteOne({ id });
+      return existing;
+    });
+
+    await withCollection('candidates', (collection) => {
+      return collection.deleteMany({ sessionId: id });
+    });
+  }
+
+  const existing = mongoExisting || memoryExisting;
   if (!existing) return false;
 
-  await delKey(`session:${id}`);
+  memory.sessions.delete(`session:${id}`);
 
   if (existing.link) {
     memory.sessionByLink.delete(existing.link);
-    if (kvEnabled()) {
-      await kvOp((client) => client.del(`sessionByLink:${existing.link}`));
-    }
   }
 
   if (existing.interviewerId) {
     memory.sessionsByInterviewer.get(existing.interviewerId)?.delete(existing.id);
-    if (kvEnabled()) {
-      await kvOp((client) => client.srem(`sessionsByInterviewer:${existing.interviewerId}`, existing.id));
-    }
   }
+
+  const candidateIds = Array.from(memory.candidatesBySession.get(id) || []);
+  candidateIds.forEach((candidateId) => {
+    memory.candidates.delete(`candidate:${candidateId}`);
+    memory.allCandidates.delete(candidateId);
+  });
+  memory.candidatesBySession.delete(id);
 
   return true;
 };
 
 const putCandidate = async (candidate) => {
-  const key = `candidate:${candidate.id}`;
-  await setJson(key, candidate);
+  if (!candidate?.id) return null;
 
-  memory.allCandidates.add(candidate.id);
-  if (kvEnabled()) {
-    await kvOp((client) => client.sadd('allCandidates', candidate.id));
-  }
+  hydrateMemoryCandidateIndexes(candidate);
 
-  if (candidate.sessionId) {
-    getMemSet(memory.candidatesBySession, candidate.sessionId).add(candidate.id);
-    if (kvEnabled()) {
-      await kvOp((client) => client.sadd(`candidatesBySession:${candidate.sessionId}`, candidate.id));
-    }
+  if (mongoEnabled()) {
+    await withCollection('candidates', (collection) => {
+      return collection.updateOne({ id: candidate.id }, { $set: candidate }, { upsert: true });
+    });
   }
 
   return candidate;
 };
 
 const listCandidates = async (sessionId) => {
-  const kvIds = kvEnabled()
-    ? await kvOp((client) => client.smembers(sessionId ? `candidatesBySession:${sessionId}` : 'allCandidates'))
-    : null;
+  const mongoCandidates = await withCollection('candidates', (collection) => {
+    const query = sessionId ? { sessionId } : {};
+    return collection.find(query, { projection: { _id: 0 } }).toArray();
+  });
 
-  const ids = Array.isArray(kvIds)
-    ? kvIds
-    : sessionId
-      ? Array.from(memory.candidatesBySession.get(sessionId) || [])
-      : Array.from(memory.allCandidates);
+  if (Array.isArray(mongoCandidates)) {
+    mongoCandidates.forEach(hydrateMemoryCandidateIndexes);
+    return mongoCandidates;
+  }
+
+  const ids = sessionId
+    ? Array.from(memory.candidatesBySession.get(sessionId) || [])
+    : Array.from(memory.allCandidates);
 
   if (!ids.length) return [];
 
-  const keys = ids.map((id) => `candidate:${id}`);
-  const kvCandidates = kvEnabled() ? await kvOp((client) => client.mget(...keys)) : null;
-  const candidates = Array.isArray(kvCandidates) ? kvCandidates : keys.map((k) => memory.candidates.get(k));
-  return (candidates || []).filter(Boolean);
+  return ids
+    .map((id) => memory.candidates.get(`candidate:${id}`))
+    .filter(Boolean);
 };
 
 const patchCandidate = async (id, updates) => {
-  const existing = await getJson(`candidate:${id}`);
+  if (!id) return null;
+
+  if (mongoEnabled()) {
+    const updated = await withCollection('candidates', async (collection) => {
+      const existing = await collection.findOne({ id }, { projection: { _id: 0 } });
+      if (!existing) return null;
+
+      const next = { ...existing, ...(updates || {}) };
+      await collection.updateOne({ id }, { $set: next }, { upsert: true });
+      return next;
+    });
+
+    if (updated) {
+      hydrateMemoryCandidateIndexes(updated);
+      return updated;
+    }
+  }
+
+  const existing = memory.candidates.get(`candidate:${id}`);
   if (!existing) return null;
+
   const next = { ...existing, ...(updates || {}) };
-  await putCandidate(next);
+  hydrateMemoryCandidateIndexes(next);
   return next;
 };
 
 module.exports = {
-  kvEnabled,
+  kvEnabled: mongoEnabled,
+  mongoEnabled,
   getSessionByLink,
   putSession,
   listSessions,

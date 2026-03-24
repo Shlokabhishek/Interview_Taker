@@ -109,27 +109,15 @@ export const getApiBaseUrl = () => {
     const envBase = import.meta?.env?.VITE_API_BASE_URL;
     const storedBase = storage.get('apiBaseUrl');
     const raw = (envBase || storedBase || '').trim();
-    if (!raw) return import.meta?.env?.PROD ? '/api' : '';
+
+    if (import.meta?.env?.PROD) {
+      // In deployed environments, default to same-origin serverless API unless explicitly configured.
+      if (!envBase) return '/api';
+    }
+
+    if (!raw) return '';
 
     const normalized = raw.endsWith('/') ? raw.slice(0, -1) : raw;
-
-    // Avoid accidentally using a dev-only API base (e.g. http://localhost:8787) in production builds.
-    // This commonly causes "Interview Not Found" on deployed links because sessions never reach the deployed backend.
-    if (import.meta?.env?.PROD) {
-      const appHost = (() => {
-        try {
-          return window?.location?.hostname || '';
-        } catch (e) {
-          return '';
-        }
-      })();
-      const appIsLocalhost = /^(localhost|127\.0\.0\.1|\[::1\])$/i.test(appHost);
-
-      const looksLikeLocalhost =
-        /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?(\/|$)/i.test(normalized) ||
-        /^(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?(\/|$)/i.test(normalized);
-      if (!appIsLocalhost && looksLikeLocalhost) return '/api';
-    }
 
     return normalized;
   } catch (e) {
