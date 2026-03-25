@@ -7,7 +7,7 @@ import { isValidEmail } from '../../utils/helpers';
 
 const Register = () => {
   const navigate = useNavigate();
-  const { register, loading } = useAuth();
+  const { register, loginWithGoogle, loading } = useAuth();
   
   const [formData, setFormData] = useState({
     name: '',
@@ -87,6 +87,15 @@ const Register = () => {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    setErrors({});
+    setInfoMessage('');
+    const result = await loginWithGoogle();
+    if (!result.success) {
+      setErrors({ form: result.error || 'Google sign-in failed' });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-600 via-primary-700 to-primary-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -102,6 +111,26 @@ const Register = () => {
         </div>
 
         <Card className="shadow-2xl">
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            className="w-full mb-4"
+            onClick={handleGoogleSignIn}
+            loading={loading}
+          >
+            Continue with Google
+          </Button>
+
+          <div className="relative mb-4">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white px-2 text-gray-500">or create with email</span>
+            </div>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-4">
             {errors.form && (
               <Alert type="error" message={errors.form} />

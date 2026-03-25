@@ -161,6 +161,41 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  const loginWithGoogle = useCallback(async () => {
+    setError(null);
+    setLoading(true);
+
+    try {
+      if (!isSupabaseConfigured || !supabase) {
+        const msg = 'Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.';
+        setError(msg);
+        setLoading(false);
+        return { success: false, error: msg };
+      }
+
+      const redirectTo = `${window.location.origin}/interviewer/dashboard`;
+      const { error: authError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo },
+      });
+
+      if (authError) {
+        const msg = authError.message || 'Google sign-in failed';
+        setError(msg);
+        setLoading(false);
+        return { success: false, error: msg };
+      }
+
+      setLoading(false);
+      return { success: true };
+    } catch (err) {
+      const errorMsg = err.message || 'Google sign-in failed';
+      setError(errorMsg);
+      setLoading(false);
+      return { success: false, error: errorMsg };
+    }
+  }, []);
+
   const logout = useCallback(async () => {
     if (supabase) {
       await supabase.auth.signOut();
@@ -221,6 +256,7 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     register,
+    loginWithGoogle,
     updateProfile,
     changePassword,
     isAuthenticated: !!user,

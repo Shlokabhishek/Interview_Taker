@@ -6,7 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login, loading, error } = useAuth();
+  const { login, loginWithGoogle, loading, error } = useAuth();
   
   const [formData, setFormData] = useState({
     email: '',
@@ -41,6 +41,14 @@ const Login = () => {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    setFormError('');
+    const result = await loginWithGoogle();
+    if (!result.success) {
+      setFormError(result.error || 'Google sign-in failed');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-600 via-primary-700 to-primary-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -56,6 +64,26 @@ const Login = () => {
         </div>
 
         <Card className="shadow-2xl">
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            className="w-full mb-4"
+            onClick={handleGoogleSignIn}
+            loading={loading}
+          >
+            Continue with Google
+          </Button>
+
+          <div className="relative mb-5">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white px-2 text-gray-500">or continue with email</span>
+            </div>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-5">
             {(formError || error) && (
               <Alert
