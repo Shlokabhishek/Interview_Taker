@@ -1,11 +1,36 @@
 import http from 'node:http';
-import { promises as fs } from 'node:fs';
+import { existsSync, readFileSync, promises as fs } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { MongoClient } from 'mongodb';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+const loadLocalEnv = () => {
+  const envPath = path.join(process.cwd(), '.env');
+  if (!existsSync(envPath)) return;
+
+  const envRaw = readFileSync(envPath, 'utf8');
+  const lines = envRaw.split(/\r?\n/);
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+
+    const eqIdx = trimmed.indexOf('=');
+    if (eqIdx <= 0) continue;
+
+    const key = trimmed.slice(0, eqIdx).trim();
+    const value = trimmed.slice(eqIdx + 1).trim();
+
+    if (!Object.prototype.hasOwnProperty.call(process.env, key)) {
+      process.env[key] = value;
+    }
+  }
+};
+
+loadLocalEnv();
 
 const PORT = Number(process.env.PORT || 8787);
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'db.json');
@@ -309,6 +334,5 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  // eslint-disable-next-line no-console
   console.log(`Backend running on http://localhost:${PORT}`);
 });
