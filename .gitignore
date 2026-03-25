@@ -20,6 +20,7 @@ build
 .env.development.local
 .env.test.local
 .env.production.local
+VERCEL_ENV_SETUP.md
 
 # Logs
 npm-debug.log*
