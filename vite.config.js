@@ -4,7 +4,10 @@ import mkcert from 'vite-plugin-mkcert';
 import path from 'path';
 
 export default defineConfig({
-  plugins: [react(), mkcert()],
+  plugins: [
+    react(),
+    process.env.VITE_USE_MKCERT === 'false' ? null : mkcert(),
+  ].filter(Boolean),
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -27,7 +30,7 @@ export default defineConfig({
     host: true, // Listen on all network interfaces (0.0.0.0)
     port: 3001,
     strictPort: true,
-    https: true, // Enable HTTPS for camera access
+    https: process.env.VITE_USE_MKCERT === 'false' ? false : true, // Enable HTTPS for camera access when mkcert is available
     open: true,
   },
 });

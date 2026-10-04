@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Interview Platform - Complete Flowchart</title>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'base',
+      flowchart: {
+        curve: 'stepAfter',
+        htmlLabels: true,
+        nodeSpacing: 34,
+        rankSpacing: 38,
+        padding: 12,
+        useMaxWidth: true
+      },
+      themeVariables: {
+        fontFamily: 'DM Sans, Arial, sans-serif',
+        fontSize: '13px',
+        primaryColor: '#d8f1ec',
+        primaryTextColor: '#13222f',
+        primaryBorderColor: '#087f78',
+        lineColor: '#52636a',
+        secondaryColor: '#e5edf4',
+        tertiaryColor: '#fff0c7'
+      }
+    });
+  </script>
+  <style>
+    :root {
+      --ink: #13222f;
+      --navy: #132b3a;
+      --teal: #087f78;
+      --coral: #ed715a;
+      --yellow: #efb84b;
+      --paper: #f4f7f5;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      background: #172a35;
+      color: var(--ink);
+      font-family: 'DM Sans', Arial, sans-serif;
+    }
+    .page-header {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      min-height: 64px;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: #f5fbf8;
+      background: #0e202b;
+      border-bottom: 1px solid rgba(255,255,255,.12);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 9px;
+      color: white;
+      background: var(--coral);
+      font-weight: 800;
+    }
+    .brand strong { display: block; font-size: 15px; }
+    .brand span { display: block; margin-top: 2px; color: #9db5b5; font-size: 11px; }
+    .page-header button {
+      padding: 9px 13px;
+      color: #eff8f4;
+      background: #173440;
+      border: 1px solid #34515b;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .page-header button:hover { background: var(--teal); }
+    main { padding: 28px 18px 54px; }
+    .diagram-shell {
+      width: min(100%, 980px);
+      margin: 0 auto;
+      padding: 36px 26px;
+      background: var(--paper);
+      box-shadow: 0 24px 70px rgba(0,0,0,.25);
+      border-radius: 4px;
+    }
+    .diagram-heading {
+      width: min(100%, 880px);
+      margin: 0 auto 22px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #d4e0dc;
+    }
+    .diagram-heading small {
+      color: var(--teal);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+    .diagram-heading h1 {
+      margin: 7px 0 0;
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: clamp(24px, 4vw, 40px);
+      line-height: 1.05;
+    }
+    .diagram-heading p {
+      max-width: 720px;
+      margin: 10px 0 0;
+      color: #61737a;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .mermaid {
+      width: 100%;
+      overflow: auto;
+      text-align: center;
+    }
+    .mermaid svg { width: 100%; max-width: 100%; height: auto; }
+    .legend {
+      width: min(100%, 880px);
+      margin: 20px auto 0;
+      padding-top: 12px;
+      border-top: 1px solid #d4e0dc;
+      color: #61737a;
+      font-size: 11px;
+      line-height: 1.55;
+    }
+    .legend b { color: var(--ink); }
+    @media print {
+      .page-header { display: none; }
+      body { background: white; }
+      main { padding: 0; }
+      .diagram-shell { width: 100%; padding: 20px; box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <div class="brand">
+      <div class="brand-mark">AI</div>
+      <div><strong>AI Interview Platform</strong><span>Complete dataflow, pipeline and algorithm map</span></div>
+    </div>
+    <button type="button" onclick="window.print()">Print / Save PDF</button>
+  </header>
+
+  <main>
+    <section class="diagram-shell">
+      <div class="diagram-heading">
+        <small>System flowchart</small>
+        <h1>From interview input to hiring output</h1>
+        <p>Every pipeline stage, algorithm, data store, decision path, and final output is shown in one connected flow.</p>
+      </div>
+
+      <pre class="mermaid">
+flowchart TB
+    START((START))
+
+    INTERVIEW([Interview Setup])
+    JOB_DESC[/Job Description/]
+    RESUME[/Candidate Resume/]
+    CANDIDATE[Candidate]
+
+    RESUME_SKILLS["Resume Skill Extraction<br/>Pattern and keyword matching"]
+    RESUME_PROJECTS["Resume Project Extraction<br/>Project line filtering"]
+    QUESTION_DECISION{"AI Question<br/>Generation Available?"}
+    OPENAI_QUESTIONS(["OpenAI Question<br/>Generator"])
+    LOCAL_QUESTIONS(["Local Question<br/>Generator"])
+    QUESTION_GENERATION([Question Generation])
+    QUESTIONS[("Question Store<br/>Questions + Keywords + Criteria")]
+
+    CONDUCT(["2. Conduct<br/>Interview"])
+    MEDIA[/"Speech, Camera<br/>and Audio"/]
+    TRANSCRIPT[/Speech Transcript/]
+    RECORDING[/Recorded Media/]
+    INTEGRITY_EVENTS[/Integrity Events/]
+    RESPONSE_PACKET[("Response Packet<br/>Question + Answer + Rubric + Evidence")]
+
+    ANALYZE(["3. Analyze<br/>Response"])
+    AI_DECISION{"Remote AI<br/>Available?"}
+    OPENAI_ANALYSIS(["OpenAI Structured<br/>JSON Analysis"])
+    LOCAL_ANALYSIS(["Local Deterministic<br/>Analysis"])
+
+    KEYWORD_MATCH["Keyword Match Algorithm<br/><br/>keywordScore = matchedKeywords<br/>/ expectedKeywords x 100"]
+    RELEVANCE["Relevance Algorithm<br/><br/>relevance = wordMatchRatio x 80<br/>+ lengthBonus"]
+    CONFIDENCE["Confidence Algorithm<br/><br/>confidence = clamp(50<br/>+ positivePhrases x 10<br/>- negativePhrases x 10<br/>+ lengthAdjustment, 0, 100)"]
+    SKILL_SCORE["Skill Detection Algorithm<br/><br/>skillScore = min(100<br/>keywordHits / categoryTerms<br/>x 100 x 2)"]
+    ACCURACY["Accuracy Algorithm<br/><br/>accuracy = keywordScore x 0.60<br/>+ relevance x 0.40"]
+    OVERALL_SCORE["Weighted Overall Score<br/><br/>overallScore = relevance x 0.25<br/>+ accuracy x 0.30<br/>+ confidence x 0.20<br/>+ keywordScore x 0.25<br/><br/>Capped at 100"]
+    RESPONSE_ANALYSIS[("Response Analysis<br/>Scores + Skills + Evidence")]
+
+    VERIFY(["4. Verify<br/>Integrity"])
+    PHONE["Phone Detection<br/>Weight = 0.48"]
+    GAZE["Gaze Anomaly<br/>Weight = 0.28"]
+    AUDIO["Audio Anomaly<br/>Weight = 0.16"]
+    TAMPER["Tamper Suspicion<br/>Weight = 0.08"]
+    INTEGRITY_RISK["Integrity Risk Formula<br/><br/>risk = sum(clampedEventConfidence<br/>x signalWeight) + discrepancyPenalty"]
+    TRUST_SCORE["Trust Score Formula<br/><br/>trustScore = 100<br/>- min(1, risk) x 100"]
+    INTEGRITY_RECORD[("Integrity Record<br/>Events + Risk + Trust Score")]
+
+    SUMMARY_PROCESS(["5. Generate<br/>Interview Summary"])
+    ALL_RESPONSES[("All Response<br/>Analyses")]
+    AVERAGE_SCORE["Average Score Algorithm<br/><br/>averageScore = sum(responseScores)<br/>/ totalResponses"]
+    SKILL_AGGREGATION["Skill Aggregation Algorithm<br/><br/>average skill score<br/>for each category"]
+    THEME_ANALYSIS["Strength and Improvement<br/>Algorithm<br/><br/>count, sort by frequency,<br/>select top themes"]
+    INTERVIEW_SUMMARY[("Interview Summary<br/>Overall Score + Skills<br/>Strengths + Improvements<br/>Integrity Status")]
+
+    RANKING["Candidate Ranking Algorithm<br/><br/>sort candidates by overallScore<br/>in descending order<br/><br/>rank = index + 1"]
+    HR_DASHBOARD([HR Review Dashboard])
+    CANDIDATE_RESULT([Candidate Result Screen])
+    REPORT[/Decision Support Report/]
+    END_NODE((END))
+
+    START --> INTERVIEW
+    INTERVIEW --> JOB_DESC
+    JOB_DESC --> QUESTION_DECISION
+    RESUME --> RESUME_SKILLS
+    RESUME --> RESUME_PROJECTS
+    QUESTION_DECISION -->|YES| OPENAI_QUESTIONS
+    QUESTION_DECISION -->|NO / FALLBACK| LOCAL_QUESTIONS
+    RESUME_SKILLS --> QUESTION_GENERATION
+    RESUME_PROJECTS --> QUESTION_GENERATION
+    OPENAI_QUESTIONS --> QUESTION_GENERATION
+    LOCAL_QUESTIONS --> QUESTION_GENERATION
+    QUESTION_GENERATION --> QUESTIONS
+
+    QUESTIONS --> CONDUCT
+    CANDIDATE --> CONDUCT
+    CONDUCT --> MEDIA
+    MEDIA --> TRANSCRIPT
+    MEDIA --> RECORDING
+    MEDIA --> INTEGRITY_EVENTS
+
+    QUESTIONS --> RESPONSE_PACKET
+    TRANSCRIPT --> RESPONSE_PACKET
+    RECORDING --> RESPONSE_PACKET
+    INTEGRITY_EVENTS --> RESPONSE_PACKET
+    RESPONSE_PACKET --> ANALYZE
+    ANALYZE --> AI_DECISION
+    AI_DECISION -->|YES| OPENAI_ANALYSIS
+    AI_DECISION -->|NO / FALLBACK| LOCAL_ANALYSIS
+
+    LOCAL_ANALYSIS --> KEYWORD_MATCH
+    LOCAL_ANALYSIS --> RELEVANCE
+    LOCAL_ANALYSIS --> CONFIDENCE
+    LOCAL_ANALYSIS --> SKILL_SCORE
+    KEYWORD_MATCH --> ACCURACY
+    RELEVANCE --> ACCURACY
+    ACCURACY --> OVERALL_SCORE
+    CONFIDENCE --> OVERALL_SCORE
+    KEYWORD_MATCH --> OVERALL_SCORE
+    SKILL_SCORE --> RESPONSE_ANALYSIS
+    OVERALL_SCORE --> RESPONSE_ANALYSIS
+    OPENAI_ANALYSIS --> RESPONSE_ANALYSIS
+
+    INTEGRITY_EVENTS --> VERIFY
+    VERIFY --> PHONE
+    VERIFY --> GAZE
+    VERIFY --> AUDIO
+    VERIFY --> TAMPER
+    PHONE --> INTEGRITY_RISK
+    GAZE --> INTEGRITY_RISK
+    AUDIO --> INTEGRITY_RISK
+    TAMPER --> INTEGRITY_RISK
+    INTEGRITY_RISK --> TRUST_SCORE
+    TRUST_SCORE --> INTEGRITY_RECORD
+
+    RESPONSE_ANALYSIS --> ALL_RESPONSES
+    ALL_RESPONSES --> SUMMARY_PROCESS
+    INTEGRITY_RECORD --> SUMMARY_PROCESS
+    SUMMARY_PROCESS --> AVERAGE_SCORE
+    SUMMARY_PROCESS --> SKILL_AGGREGATION
+    SUMMARY_PROCESS --> THEME_ANALYSIS
+    AVERAGE_SCORE --> INTERVIEW_SUMMARY
+    SKILL_AGGREGATION --> INTERVIEW_SUMMARY
+    THEME_ANALYSIS --> INTERVIEW_SUMMARY
+    INTEGRITY_RECORD --> INTERVIEW_SUMMARY
+
+    INTERVIEW_SUMMARY --> RANKING
+    RANKING --> HR_DASHBOARD
+    INTERVIEW_SUMMARY --> CANDIDATE_RESULT
+    INTERVIEW_SUMMARY --> REPORT
+    HR_DASHBOARD --> END_NODE
+    CANDIDATE_RESULT --> END_NODE
+    REPORT --> END_NODE
+
+    classDef startEnd fill:#132b3a,stroke:#ed715a,stroke-width:3px,color:#ffffff
+    classDef actor fill:#ffe2d8,stroke:#ed715a,stroke-width:2px,color:#13222f
+    classDef input fill:#fff0c7,stroke:#efb84b,stroke-width:2px,color:#13222f
+    classDef process fill:#d8f1ec,stroke:#087f78,stroke-width:2px,color:#13222f
+    classDef decision fill:#fff0c7,stroke:#efb84b,stroke-width:2px,color:#13222f
+    classDef algorithm fill:#e5edf4,stroke:#31566b,stroke-width:2px,color:#13222f
+    classDef datastore fill:#eef2f0,stroke:#647784,stroke-width:2px,color:#13222f
+    classDef output fill:#d8f1ec,stroke:#087f78,stroke-width:3px,color:#13222f
+
+    class START,END_NODE startEnd
+    class CANDIDATE actor
+    class JOB_DESC,RESUME,MEDIA,TRANSCRIPT,RECORDING,INTEGRITY_EVENTS,REPORT input
+    class INTERVIEW,CONDUCT,ANALYZE,VERIFY,SUMMARY_PROCESS,OPENAI_QUESTIONS,LOCAL_QUESTIONS,QUESTION_GENERATION,OPENAI_ANALYSIS,LOCAL_ANALYSIS process
+    class QUESTION_DECISION,AI_DECISION decision
+    class RESUME_SKILLS,RESUME_PROJECTS,KEYWORD_MATCH,RELEVANCE,CONFIDENCE,SKILL_SCORE,ACCURACY,OVERALL_SCORE,PHONE,GAZE,AUDIO,TAMPER,INTEGRITY_RISK,TRUST_SCORE,AVERAGE_SCORE,SKILL_AGGREGATION,THEME_ANALYSIS,RANKING algorithm
+    class QUESTIONS,RESPONSE_PACKET,RESPONSE_ANALYSIS,INTEGRITY_RECORD,ALL_RESPONSES,INTERVIEW_SUMMARY datastore
+    class HR_DASHBOARD,CANDIDATE_RESULT,REPORT output
+      </pre>
+
+      <div class="legend">
+        <b>Notation:</b> rounded rectangles are processes, diamonds are decisions, parallelograms are inputs or reports, cylinders are data stores, and circles are start/end terminals.
+      </div>
+    </section>
+  </main>
+</body>
+</html>

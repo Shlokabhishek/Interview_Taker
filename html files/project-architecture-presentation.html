@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Interview Platform | Architecture Deck</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #13222f;
+      --muted: #647784;
+      --paper: #f5f8f6;
+      --white: #ffffff;
+      --navy: #132b3a;
+      --teal: #087f78;
+      --teal-soft: #d8f1ec;
+      --coral: #ed715a;
+      --coral-soft: #ffe2d8;
+      --yellow: #efb84b;
+      --yellow-soft: #fff0c7;
+      --line: #dbe5e1;
+      --shadow: 0 24px 70px rgba(9, 32, 43, .18);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      background: #12232e;
+      color: var(--ink);
+      font-family: 'DM Sans', sans-serif;
+      overflow: hidden;
+    }
+    button { font: inherit; }
+
+    .appbar {
+      height: 66px;
+      padding: 0 26px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: #eff9f4;
+      border-bottom: 1px solid rgba(255,255,255,.1);
+      background: #0e202b;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 700; }
+    .brand-mark {
+      width: 32px; height: 32px; border-radius: 9px;
+      display: grid; place-items: center; color: #fff; background: var(--coral);
+      font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+    }
+    .brand small { display: block; color: #8da5ac; font-size: 11px; font-weight: 500; margin-top: 2px; }
+    .actions { display: flex; align-items: center; gap: 10px; }
+    .counter { color: #a8c0c0; font: 600 12px 'Space Grotesk', sans-serif; letter-spacing: .06em; }
+    .control {
+      border: 1px solid #2d4651; border-radius: 7px; padding: 8px 12px; cursor: pointer;
+      color: #dcebe7; background: #17323f; transition: .2s ease;
+    }
+    .control:hover { background: var(--teal); border-color: var(--teal); }
+
+    main { height: calc(100vh - 66px); padding: 18px 28px; display: grid; place-items: center; }
+    .deck { width: min(1240px, calc((100vh - 102px) * 1.7778), 100%); aspect-ratio: 16 / 9; position: relative; box-shadow: var(--shadow); }
+    .slide {
+      position: absolute; inset: 0; display: none; overflow: hidden; padding: 44px 54px;
+      background: var(--paper); animation: appear .35s ease both;
+    }
+    .slide.active { display: flex; flex-direction: column; }
+    @keyframes appear { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    .slide::before { content: ''; position: absolute; width: 320px; height: 320px; right: -150px; top: -160px; border-radius: 50%; background: rgba(8,127,120,.08); }
+    .eyebrow { color: var(--teal); text-transform: uppercase; letter-spacing: .16em; font: 700 11px 'Space Grotesk', sans-serif; }
+    h1, h2, h3, p { margin: 0; }
+    h1, h2, h3 { font-family: 'Space Grotesk', sans-serif; }
+    h1 { max-width: 800px; margin-top: 18px; font-size: clamp(34px, 4.5vw, 70px); line-height: .98; letter-spacing: -.055em; }
+    h2 { font-size: 31px; letter-spacing: -.04em; }
+    h3 { font-size: 16px; letter-spacing: -.02em; }
+    .subtitle { color: var(--muted); font-size: 16px; line-height: 1.55; max-width: 700px; }
+    .title-slide { background: #eaf5ef; justify-content: center; }
+    .title-slide::after { content: ''; position: absolute; width: 42%; height: 100%; right: 0; top: 0; background: var(--navy); clip-path: polygon(30% 0,100% 0,100% 100%,0 100%); }
+    .title-copy { position: relative; z-index: 1; }
+    .title-slide .subtitle { margin-top: 22px; max-width: 560px; }
+    .title-meta { margin-top: 44px; display: flex; gap: 10px; position: relative; z-index: 1; }
+    .pill { padding: 8px 12px; border-radius: 99px; font-size: 12px; font-weight: 700; background: var(--white); border: 1px solid var(--line); }
+    .title-graphic { position: absolute; z-index: 2; right: 6%; top: 25%; width: 34%; height: 50%; }
+    .orb { width: 170px; height: 170px; margin: auto; border-radius: 50%; border: 1px solid rgba(255,255,255,.25); display: grid; place-items: center; background: radial-gradient(circle at 35% 30%, #ee8a70, #bd4e4b 55%, #143749 56%); color: #fff; font: 700 25px 'Space Grotesk', sans-serif; box-shadow: 0 0 0 24px rgba(237,113,90,.08), 0 0 0 48px rgba(237,113,90,.06); }
+    .graphic-label { margin-top: 22px; color: #b8cecb; text-align: center; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
+
+    .slide-head { display: flex; justify-content: space-between; align-items: start; margin-bottom: 24px; position: relative; z-index: 1; }
+    .slide-head p { margin-top: 8px; color: var(--muted); font-size: 13px; }
+    .slide-num { color: #9eb4b0; font: 600 12px 'Space Grotesk', sans-serif; }
+    .content { flex: 1; position: relative; z-index: 1; min-height: 0; }
+
+    .dfd { height: 100%; display: grid; grid-template-columns: .9fr 30px 1.1fr 30px 1.1fr 30px .9fr; grid-template-rows: 1fr 1fr; gap: 10px 8px; align-items: center; }
+    .dfd-node { position: relative; min-height: 92px; padding: 14px; background: #fff; border: 1px solid var(--line); box-shadow: 0 8px 20px rgba(22,54,61,.06); }
+    .dfd-node h3 { margin: 7px 0 4px; font-size: 14px; }
+    .dfd-node p { color: var(--muted); font-size: 10px; line-height: 1.35; }
+    .dfd-entity { border: 2px solid var(--coral); border-radius: 3px; }
+    .dfd-process { border: 2px solid var(--teal); border-radius: 50%; min-height: 110px; display: flex; flex-direction: column; justify-content: center; text-align: center; }
+    .dfd-process h3 { margin-top: 2px; }
+    .dfd-store { border: 2px solid var(--yellow); border-left-width: 7px; border-right-width: 7px; border-radius: 2px; }
+    .dfd-store::before, .dfd-store::after { content: ''; position: absolute; left: -2px; right: -2px; height: 1px; background: var(--yellow); }
+    .dfd-store::before { top: 8px; }
+    .dfd-store::after { bottom: 8px; }
+    .dfd-node .tag { display: block; }
+    .dfd-arrow { position: relative; color: var(--coral); text-align: center; font: 700 25px 'Space Grotesk', sans-serif; }
+    .dfd-arrow small { position: absolute; top: -17px; left: 50%; width: 78px; transform: translateX(-50%); color: var(--muted); font: 600 9px 'DM Sans', sans-serif; }
+    .dfd-legend { position: absolute; right: 0; top: -25px; display: flex; gap: 12px; color: var(--muted); font-size: 9px; }
+    .dfd-legend span { display: inline-flex; align-items: center; gap: 4px; }
+    .legend-shape { width: 14px; height: 10px; display: inline-block; border: 1px solid var(--teal); }
+    .legend-shape.entity { border-color: var(--coral); border-radius: 2px; }
+    .legend-shape.process { border-radius: 50%; }
+    .legend-shape.store { border-color: var(--yellow); border-left-width: 4px; border-right-width: 4px; }
+    .flow-foot { position: absolute; bottom: 0; left: 0; right: 0; padding: 9px 14px; border-radius: 7px; color: #45676a; background: #e4f3ed; font-size: 11px; }
+
+    .flowchart { height: 100%; display: grid; grid-template-columns: 1fr 28px 1fr 28px 1fr 28px 1fr; align-items: center; gap: 8px; }
+    .flow-step { min-height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+    .flow-symbol { width: 100%; min-height: 82px; padding: 13px 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fff; border: 2px solid var(--teal); box-shadow: 0 8px 20px rgba(22,54,61,.06); }
+    .flow-symbol h3 { margin: 4px 0 4px; font-size: 14px; }
+    .flow-symbol p { color: var(--muted); font-size: 10px; line-height: 1.35; }
+    .flow-symbol.terminator { border-color: var(--coral); border-radius: 999px; }
+    .flow-symbol.process { border-radius: 8px; }
+    .flow-symbol.decision { width: 110px; min-height: 110px; transform: rotate(45deg); border-color: var(--yellow); }
+    .flow-symbol.decision > * { transform: rotate(-45deg); }
+    .flow-symbol.data { border-color: var(--teal); clip-path: polygon(0 0, 88% 0, 100% 50%, 88% 100%, 0 100%); }
+    .flow-step .tag { margin-bottom: 10px; }
+    .flow-arrow { position: relative; color: var(--coral); font: 700 25px 'Space Grotesk', sans-serif; text-align: center; }
+    .flow-arrow small { position: absolute; top: -18px; left: 50%; width: 80px; transform: translateX(-50%); color: var(--muted); font: 600 9px 'DM Sans', sans-serif; }
+    .pipeline-note { margin-top: 6px; padding: 6px 10px; color: #566f72; background: #e9f2ed; font-size: 9px; line-height: 1.25; border-radius: 6px; }
+    .pipeline-flow { height: auto; display: flex; flex-direction: column; gap: 4px; }
+    .pipeline-main { display: grid; grid-template-columns: 1fr 24px 1fr 24px 1fr 24px 1fr; gap: 5px; align-items: center; flex: 0 0 92px; }
+    .pipeline-tail { display: none; }
+    .pipeline-box { position: relative; min-height: 54px; padding: 6px 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; background: #fff; border: 2px solid var(--teal); border-radius: 8px; box-shadow: 0 8px 20px rgba(22,54,61,.06); }
+    .pipeline-box h3 { margin: 5px 0 3px; font-size: 13px; }
+    .pipeline-box p { color: var(--muted); font-size: 10px; line-height: 1.3; }
+    .pipeline-box.start { border-color: var(--coral); border-radius: 999px; }
+    .pipeline-box.decision { width: 78px; min-height: 78px; justify-self: center; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); border: 0; border-radius: 0; background: var(--yellow); box-shadow: none; }
+    .pipeline-box.decision::after { content: ''; position: absolute; inset: 3px; z-index: -1; background: #fff; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+    .pipeline-box.decision > * { position: relative; z-index: 2; }
+    .pipeline-box.output { border-color: var(--teal); clip-path: polygon(0 0, 88% 0, 100% 50%, 88% 100%, 0 100%); }
+    .pipeline-arrow { position: relative; color: var(--coral); text-align: center; font: 700 25px 'Space Grotesk', sans-serif; }
+    .pipeline-arrow small { position: absolute; top: -17px; left: 50%; width: 80px; transform: translateX(-50%); color: var(--muted); font: 600 9px 'DM Sans', sans-serif; }
+    .branch-zone { flex: 0 0 78px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; align-items: start; }
+    .branch { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .branch-label { color: var(--muted); font: 700 9px 'Space Grotesk', sans-serif; letter-spacing: .1em; text-transform: uppercase; }
+    .branch-arrow { color: var(--coral); font: 700 20px 'Space Grotesk', sans-serif; }
+    .branch-card { width: 100%; min-height: 54px; padding: 6px; text-align: center; background: #fff; border: 2px solid var(--teal); border-radius: 8px; box-shadow: 0 8px 20px rgba(22,54,61,.06); }
+    .branch-card h3 { margin: 4px 0 2px; font-size: 12px; }
+    .branch-card p { color: var(--muted); font-size: 9px; line-height: 1.25; }
+    .branch-card.remote { border-color: var(--coral); }
+    .route-row { width: 72%; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
+    .route-card { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .route-card .branch-label { font-size: 8px; }
+    .route-arrow, .merge-arrow { height: 22px; color: var(--coral); font: 700 21px/22px 'Space Grotesk', sans-serif; text-align: center; }
+    .merge-row { width: 78%; margin: 0 auto; display: grid; grid-template-columns: 1fr 30px 1fr; align-items: center; gap: 7px; }
+    .merge-block { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+    .merge-label { color: var(--muted); font: 700 8px 'Space Grotesk', sans-serif; text-transform: uppercase; letter-spacing: .08em; }
+    .merge-block .branch-card { width: 100%; }
+    .merge-output-arrow { position: relative; color: var(--coral); text-align: center; font: 700 24px 'Space Grotesk', sans-serif; }
+    .merge-output-arrow small { position: absolute; top: -15px; left: 50%; width: 92px; transform: translateX(-50%); color: var(--muted); font: 600 8px 'DM Sans', sans-serif; }
+    .mini-formulas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 2px; }
+    .formula-chip { padding: 5px 7px; color: #46656a; background: #e9f2ed; border-radius: 5px; font: 600 8px/1.2 'Space Grotesk', sans-serif; }
+    .formula-chip b { display: block; margin-bottom: 2px; color: var(--teal); font-size: 9px; }
+    .combined-flow { height: 100%; display: grid; grid-template-rows: 1.05fr .9fr .72fr; gap: 9px; }
+    .band { position: relative; min-height: 0; padding: 19px 12px 8px; border: 1px solid var(--line); border-radius: 8px; background: rgba(255,255,255,.52); }
+    .band-title { position: absolute; top: 6px; left: 12px; color: var(--teal); font: 700 9px 'Space Grotesk', sans-serif; letter-spacing: .12em; text-transform: uppercase; }
+    .dfd-strip { height: 100%; display: grid; grid-template-columns: 1fr 28px 1.12fr 28px 1.12fr 28px 1fr; align-items: center; gap: 5px; }
+    .mini-node { min-width: 0; min-height: 54px; padding: 7px 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; background: #fff; border: 2px solid var(--teal); box-shadow: 0 5px 13px rgba(22,54,61,.06); }
+    .mini-node h3 { max-width: 100%; margin: 3px 0 2px; overflow-wrap: anywhere; font-size: 11px; line-height: 1.1; }
+    .mini-node p { max-width: 100%; color: var(--muted); font-size: 8px; line-height: 1.15; overflow-wrap: anywhere; }
+    .mini-node.entity { border-color: var(--coral); border-radius: 3px; }
+    .mini-node.process { border-radius: 50%; }
+    .mini-node.store { border-color: var(--yellow); border-left-width: 5px; border-right-width: 5px; }
+    .mini-flow-arrow { position: relative; color: var(--coral); text-align: center; font: 700 21px 'Space Grotesk', sans-serif; }
+    .mini-flow-arrow small { position: absolute; top: -14px; left: 50%; width: 70px; transform: translateX(-50%); color: var(--muted); font: 600 8px 'DM Sans', sans-serif; }
+    .algo-strip { height: 100%; display: grid; grid-template-columns: 1fr 22px 1fr 22px 1fr 22px 1fr; align-items: center; gap: 4px; }
+    .algo-step { min-width: 0; min-height: 49px; padding: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; background: #fff; border: 2px solid var(--teal); border-radius: 7px; }
+    .algo-step.start { border-color: var(--coral); border-radius: 999px; }
+    .algo-step.decision { border-color: var(--yellow); clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+    .algo-step.output { border-color: var(--teal); clip-path: polygon(0 0, 86% 0, 100% 50%, 86% 100%, 0 100%); }
+    .algo-step h3 { max-width: 100%; margin: 2px 0; font-size: 10px; line-height: 1.1; overflow-wrap: anywhere; }
+    .algo-step p { max-width: 100%; color: var(--muted); font-size: 8px; line-height: 1.1; overflow-wrap: anywhere; }
+    .algo-arrow { position: relative; color: var(--coral); text-align: center; font: 700 19px 'Space Grotesk', sans-serif; }
+    .algo-arrow small { position: absolute; top: -13px; left: 50%; width: 64px; transform: translateX(-50%); color: var(--muted); font: 600 7px 'DM Sans', sans-serif; }
+    .formula-strip { height: 100%; display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+    .formula-card { min-width: 0; padding: 7px 10px; display: flex; flex-direction: column; justify-content: center; border-left: 4px solid var(--coral); background: var(--navy); color: #eff9f4; border-radius: 5px; }
+    .formula-card:nth-child(2) { border-left-color: var(--yellow); }
+    .formula-card:nth-child(3) { border-left-color: var(--teal); }
+    .formula-card b { margin-bottom: 3px; color: #f5c96c; font: 700 9px 'Space Grotesk', sans-serif; }
+    .formula-card span { color: #f4dfd5; font: 600 8px/1.22 'Space Grotesk', sans-serif; overflow-wrap: anywhere; }
+    .pipeline-slide .mini-formulas, .pipeline-slide .pipeline-note { display: none; }
+
+    .algo-grid { display: grid; grid-template-columns: 1.08fr 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 14px; height: 100%; }
+    .algo { padding: 16px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+    .algo.feature { grid-row: span 2; background: var(--navy); color: #eff9f4; border: 0; }
+    .algo.feature p, .algo.feature .formula-label { color: #a8c2bd; }
+    .algo-icon { width: 27px; height: 27px; display: grid; place-items: center; border-radius: 7px; color: #fff; background: var(--coral); font: 700 13px 'Space Grotesk', sans-serif; }
+    .algo h3 { margin: 11px 0 7px; }
+    .algo p { color: var(--muted); font-size: 11px; line-height: 1.45; }
+    .formula-label { margin-top: 23px; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .12em; }
+    .formula { margin-top: 7px; padding: 12px; color: #fbd9c9; background: #1d3b4a; border-radius: 6px; font: 600 12px/1.6 'Space Grotesk', sans-serif; }
+
+    .integrity-layout { display: grid; grid-template-columns: 1.12fr .88fr; gap: 20px; height: 100%; }
+    .signal-stack { display: grid; gap: 10px; align-content: start; }
+    .signal { display: grid; grid-template-columns: 42px 1fr auto; gap: 12px; align-items: center; padding: 13px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+    .signal-mark { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: #fff; font: 700 13px 'Space Grotesk', sans-serif; background: var(--teal); }
+    .signal:nth-child(2) .signal-mark { background: var(--yellow); color: var(--ink); }
+    .signal:nth-child(3) .signal-mark { background: var(--coral); }
+    .signal strong { font: 700 13px 'Space Grotesk', sans-serif; }
+    .signal small { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
+    .weight { color: var(--teal); font: 700 13px 'Space Grotesk', sans-serif; }
+    .risk-card { padding: 22px; color: #eef8f2; border-radius: 10px; background: var(--navy); }
+    .risk-score { display: flex; align-items: baseline; gap: 6px; margin: 20px 0 18px; }
+    .risk-score b { color: #f6c35d; font: 700 58px 'Space Grotesk', sans-serif; letter-spacing: -.07em; }
+    .risk-score span { color: #a7c3bd; font-size: 12px; }
+    .meter { height: 8px; overflow: hidden; border-radius: 8px; background: #294957; }
+    .meter i { display: block; width: 22%; height: 100%; background: var(--yellow); border-radius: inherit; }
+    .risk-card p { margin-top: 18px; color: #a8c2bd; font-size: 11px; line-height: 1.55; }
+
+    .outputs { display: grid; grid-template-columns: 1.2fr .8fr; gap: 18px; height: 100%; }
+    .output-list { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .output { padding: 17px; background: #fff; border: 1px solid var(--line); border-radius: 8px; }
+    .output h3 { margin: 10px 0 5px; }
+    .output p { color: var(--muted); font-size: 11px; line-height: 1.45; }
+    .stack { padding: 22px; background: var(--navy); color: #eff8f1; border-radius: 9px; }
+    .stack h3 { margin-bottom: 14px; }
+    .stack-row { display: flex; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid #2c4b55; font-size: 11px; }
+    .stack-row:last-child { border-bottom: 0; }
+    .stack-row span { color: #a8c2bd; }
+    .footer { position: absolute; bottom: 18px; left: 54px; right: 54px; display: flex; justify-content: space-between; color: #90a7a3; font-size: 10px; }
+
+    .thumbnails { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; gap: 5px; padding: 5px; border-radius: 8px; background: rgba(9, 28, 37, .86); }
+    .thumb { width: 26px; height: 5px; padding: 0; border: 0; border-radius: 4px; cursor: pointer; background: #3b5660; }
+    .thumb.active { background: var(--coral); }
+
+    @media (max-width: 760px) {
+      body { overflow: auto; }
+      .appbar { height: 58px; padding: 0 14px; }
+      main { height: auto; min-height: calc(100vh - 58px); padding: 15px; }
+      .deck { aspect-ratio: auto; min-height: 680px; }
+      .slide { min-height: 680px; padding: 28px 24px 48px; }
+      .title-slide::after { width: 35%; }
+      .title-graphic { right: 2%; width: 32%; }
+      .orb { width: 110px; height: 110px; font-size: 17px; }
+      .dfd, .flowchart { display: flex; flex-direction: column; align-items: stretch; gap: 4px; overflow: auto; padding-right: 4px; }
+      .dfd-node { flex: 0 0 auto; min-height: 72px; }
+      .dfd-process { min-height: 88px; }
+      .dfd-arrow, .flow-arrow { flex: 0 0 25px; transform: rotate(90deg); }
+      .dfd-arrow small, .flow-arrow small { display: none; }
+      .flow-step { flex: 0 0 auto; min-height: 100px; }
+      .flow-symbol { min-height: 68px; }
+      .flow-symbol.decision { min-height: 84px; }
+      .pipeline-flow { overflow: auto; }
+      .pipeline-main, .pipeline-tail { display: flex; flex-direction: column; flex: 0 0 auto; gap: 4px; }
+      .pipeline-main { align-items: stretch; }
+      .pipeline-main .pipeline-arrow, .pipeline-tail .pipeline-arrow { transform: rotate(90deg); flex: 0 0 24px; }
+      .pipeline-arrow small { display: none; }
+      .pipeline-box.decision { align-self: center; }
+      .branch-zone { display: flex; flex-direction: column; flex: 0 0 auto; gap: 4px; }
+      .branch-arrow { line-height: 20px; }
+      .merge-row { width: 100%; display: flex; flex-direction: column; gap: 4px; }
+      .merge-output-arrow { transform: rotate(90deg); height: 24px; }
+      .mini-formulas { grid-template-columns: 1fr; flex: 0 0 auto; }
+      .algo-grid, .integrity-layout, .outputs { height: auto; }
+      .algo-grid { grid-template-columns: 1fr 1fr; }
+      .algo.feature { grid-row: auto; grid-column: span 2; }
+      .integrity-layout, .outputs { grid-template-columns: 1fr; }
+      .footer { left: 24px; right: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="appbar">
+    <div class="brand"><div class="brand-mark">AI</div><div>Interview Platform<small>Architecture & algorithm deck</small></div></div>
+    <div class="actions"><span class="counter" id="counter">01 / 06</span><button class="control" id="prev" aria-label="Previous slide">&#8592;</button><button class="control" id="next" aria-label="Next slide">&#8594;</button><button class="control" id="fullscreen" aria-label="Toggle fullscreen">&#9974;</button></div>
+  </header>
+
+  <main>
+    <section class="deck" aria-label="Presentation deck">
+      <article class="slide active title-slide" data-title="Overview">
+        <div class="title-copy"><div class="eyebrow">System design presentation</div><h1>From interview link to evidence-based hiring signal.</h1><p class="subtitle">A visual walkthrough of the AI Interview Platform: its data flow, processing pipeline, scoring algorithms, integrity model, and product outputs.</p></div>
+        <div class="title-meta"><span class="pill">React + Vite</span><span class="pill">OpenAI + local fallback</span><span class="pill">MySQL / MongoDB</span></div>
+        <div class="title-graphic"><div class="orb">AI<br>INTERVIEW</div><div class="graphic-label">Capture &middot; Analyze &middot; Review</div></div>
+        <div class="footer"><span>PROJECT ARCHITECTURE</span><span>01</span></div>
+      </article>
+
+      <article class="slide" data-title="Data flow">
+        <div class="slide-head"><div><div class="eyebrow">01 / Data flow</div><h2>One interview, four connected data zones</h2><p>Every answer becomes a structured, reviewable record.</p></div><span class="slide-num">02</span></div>
+        <div class="content"><div class="dfd-legend"><span><i class="legend-shape entity"></i>External entity</span><span><i class="legend-shape process"></i>Process</span><span><i class="legend-shape store"></i>Data store</span></div><div class="dfd">
+          <div class="dfd-node dfd-entity"><span class="tag">External entity</span><h3>Interviewer</h3><p>Role, rubric, questions</p></div><div class="dfd-arrow">&#8594;<small>session setup</small></div>
+          <div class="dfd-node dfd-process"><span class="tag">Process 1.0</span><h3>Session setup</h3><p>Create link + question set</p></div><div class="dfd-arrow">&#8594;<small>session + questions</small></div>
+          <div class="dfd-node dfd-store"><span class="tag">D1 data store</span><h3>Session store</h3><p>sessions / questions</p></div><div class="dfd-arrow">&#8594;<small>share link</small></div>
+          <div class="dfd-node dfd-entity"><span class="tag">External entity</span><h3>Candidate</h3><p>Registration + answer</p></div>
+
+          <div class="dfd-node dfd-entity"><span class="tag">Input source</span><h3>Speech + camera</h3><p>Transcript, media, events</p></div><div class="dfd-arrow">&#8594;<small>raw response</small></div>
+          <div class="dfd-node dfd-process"><span class="tag">Process 2.0</span><h3>Analyze response</h3><p>AI JSON or local scoring</p></div><div class="dfd-arrow">&#8594;<small>scores + evidence</small></div>
+          <div class="dfd-node dfd-store"><span class="tag">D2 data store</span><h3>Candidate record</h3><p>responses / integrity</p></div><div class="dfd-arrow">&#8594;<small>review query</small></div>
+          <div class="dfd-node dfd-entity"><span class="tag">Output consumer</span><h3>HR review</h3><p>Ranked candidates + feedback</p></div>
+        </div><div class="flow-foot">DFD reading order: entities provide inputs, processes transform them, stores retain evidence, and outputs return scores plus explainable signals.</div></div>
+        <div class="footer"><span>DATA FLOW DIAGRAM</span><span>02</span></div>
+      </article>
+
+      <article class="slide" data-title="DFD + Algorithms">
+        <div class="slide-head"><div><div class="eyebrow">02 / Dedicated dataflow</div><h2>Input, transformation, algorithms, and output</h2><p>One view that connects the project dataflow to the formulas that produce each hiring signal.</p></div><span class="slide-num">03</span></div>
+        <div class="content"><div class="combined-flow">
+          <section class="band"><div class="band-title">DFD notation / data movement</div><div class="dfd-strip">
+            <div class="mini-node entity"><span class="tag">Entity</span><h3>Interviewer</h3><p>Role + rubric</p></div><div class="mini-flow-arrow">&#8594;<small>session setup</small></div>
+            <div class="mini-node process"><span class="tag">Process 1.0</span><h3>Prepare session</h3><p>Questions + criteria</p></div><div class="mini-flow-arrow">&#8594;<small>answer packet</small></div>
+            <div class="mini-node process"><span class="tag">Process 2.0</span><h3>Analyze response</h3><p>AI or local fallback</p></div><div class="mini-flow-arrow">&#8594;<small>scores + evidence</small></div>
+            <div class="mini-node store"><span class="tag">D2 store</span><h3>Candidate record</h3><p>Results + events</p></div>
+          </div></section>
+          <section class="band"><div class="band-title">Pipeline / ordered transformation</div><div class="algo-strip">
+            <div class="algo-step start"><h3>Input</h3><p>Resume + job</p></div><div class="algo-arrow">&#8594;<small>context</small></div>
+            <div class="algo-step"><h3>Capture</h3><p>Transcript + media</p></div><div class="algo-arrow">&#8594;<small>answer</small></div>
+            <div class="algo-step decision"><h3>AI available?</h3><p>Route</p></div><div class="algo-arrow">&#8594;<small>evaluate</small></div>
+            <div class="algo-step output"><h3>Output</h3><p>Review signal</p></div>
+          </div></section>
+          <section class="band"><div class="band-title">Algorithms / implemented formulas</div><div class="formula-strip">
+            <div class="formula-card"><b>Keyword match</b><span>matched / expected x 100</span></div>
+            <div class="formula-card"><b>Relevance</b><span>shared words / question words x 80 + length bonus</span></div>
+            <div class="formula-card"><b>Confidence</b><span>50 + positive phrases x 10 - negative phrases x 10 + length adjustment</span></div>
+            <div class="formula-card"><b>Skill score</b><span>min(100, keyword hits / category terms x 100 x 2)</span></div>
+            <div class="formula-card"><b>Overall + trust</b><span>relevance x .25 + accuracy x .30 + confidence x .20 + keyword x .25; trust = 100 - risk x 100</span></div>
+          </div></section>
+        </div></div>
+        <div class="footer"><span>DATAFLOW + ALGORITHM MAP</span><span>03</span></div>
+      </article>
+
+      <article class="slide pipeline-slide" data-title="Pipeline">
+        <div class="slide-head"><div><div class="eyebrow">03 / Pipeline concept</div><h2>The processing pipeline is deliberately staged</h2><p>Each stage has a clear input, transformation, and output.</p></div><span class="slide-num">04</span></div>
+        <div class="content"><div class="pipeline-flow">
+          <div class="pipeline-main">
+            <div class="pipeline-box start"><span class="tag">Start / input</span><h3>Role + resume</h3><p>Job description, candidate profile</p></div><div class="pipeline-arrow">&#8594;<small>context</small></div>
+            <div class="pipeline-box"><span class="tag">Process 1</span><h3>Prepare interview</h3><p>Extract skills, projects, questions</p></div><div class="pipeline-arrow">&#8594;<small>question set</small></div>
+            <div class="pipeline-box"><span class="tag">Process 2</span><h3>Capture answer</h3><p>Transcript + media + integrity events</p></div><div class="pipeline-arrow">&#8594;<small>answer packet</small></div>
+            <div class="pipeline-box decision"><span class="tag">Decision</span><h3>AI available?</h3><p>Choose analysis route</p></div>
+          </div>
+          <div class="route-row">
+            <div class="route-card"><span class="branch-label">NO / fallback</span><span class="route-arrow">&#8595;</span><div class="branch-card"><span class="tag">Local process</span><h3>Local algorithms</h3><p>Keyword, relevance, skills, confidence</p></div></div>
+            <div class="route-card"><span class="branch-label">YES / remote</span><span class="route-arrow">&#8595;</span><div class="branch-card remote"><span class="tag">AI process</span><h3>OpenAI analysis</h3><p>Structured JSON response evaluation</p></div></div>
+          </div>
+          <div class="merge-row"><div class="merge-block"><span class="merge-label">Both routes merge</span><span class="merge-arrow">&#8595;</span><div class="branch-card"><span class="tag">Process 3</span><h3>Integrity scoring</h3><p>Weighted risk and trust calculation</p></div></div><div class="merge-output-arrow">&#8594;<small>evidence + scores</small></div><div class="pipeline-box output"><span class="tag">End / output</span><h3>Decision support</h3><p>Summary, rank, strengths, improvements</p></div></div>
+          <div class="mini-formulas"><div class="formula-chip"><b>Keyword match</b>matched / expected x 100</div><div class="formula-chip"><b>Accuracy</b>keyword x .60 + relevance x .40</div><div class="formula-chip"><b>Overall score</b>relevance x .25 + accuracy x .30 + confidence x .20 + keyword x .25</div></div>
+        </div><div class="pipeline-note">Every arrow carries a named payload. The two analysis routes converge before integrity scoring, so both remote and fallback results produce the same reviewable output.</div></div>
+        <div class="footer"><span>PROCESSING PIPELINE</span><span>04</span></div>
+      </article>
+
+      <article class="slide" data-title="Algorithms">
+        <div class="slide-head"><div><div class="eyebrow">04 / Algorithms</div><h2>How an answer becomes a score</h2><p>Transparent heuristics make the local fallback inspectable and testable.</p></div><span class="slide-num">05</span></div>
+        <div class="content"><div class="algo-grid">
+          <div class="algo feature"><div class="algo-icon">01</div><h3>Weighted response score</h3><p>Four independent signals are combined into a bounded 0-100 score. The question weight can amplify the result for important questions, with a final cap at 100.</p><div class="formula-label">Implemented scoring model</div><div class="formula">overall =<br>(relevance x .25)<br>+ (accuracy x .30)<br>+ (confidence x .20)<br>+ (keyword match x .25)</div></div>
+          <div class="algo"><div class="algo-icon">K</div><h3>Keyword coverage</h3><p>Lowercase answer text is checked for each expected keyword. Score = matched keywords / expected keywords x 100.</p></div>
+          <div class="algo"><div class="algo-icon">R</div><h3>Question relevance</h3><p>Uses shared answer/question words longer than three characters, then adds a length bonus for a substantive 30-200 word answer.</p></div>
+          <div class="algo"><div class="algo-icon">S</div><h3>Skill presence</h3><p>Six categories scan curated keyword sets: communication, problem solving, teamwork, leadership, technical, adaptability.</p></div>
+          <div class="algo"><div class="algo-icon">C</div><h3>Confidence heuristic</h3><p>Starts at 50, adjusts for positive and negative phrases, and considers response length. Result is clamped to 0-100.</p></div>
+        </div></div>
+        <div class="footer"><span>ANSWER ANALYSIS ALGORITHMS</span><span>05</span></div>
+      </article>
+
+      <article class="slide" data-title="Integrity">
+        <div class="slide-head"><div><div class="eyebrow">05 / Integrity model</div><h2>Integrity is a weighted evidence score</h2><p>Signals support human review; no single detection is an automatic rejection.</p></div><span class="slide-num">06</span></div>
+        <div class="content"><div class="integrity-layout"><div class="signal-stack">
+          <div class="signal"><div class="signal-mark">P</div><div><strong>Phone detected</strong><small>Client and server event confidence is accumulated.</small></div><span class="weight">0.48</span></div>
+          <div class="signal"><div class="signal-mark">G</div><div><strong>Gaze anomaly</strong><small>Sustained downward angle over minimum samples.</small></div><span class="weight">0.28</span></div>
+          <div class="signal"><div class="signal-mark">A</div><div><strong>Audio anomaly</strong><small>Speech energy and silence windows provide context.</small></div><span class="weight">0.16</span></div>
+          <div class="signal"><div class="signal-mark">T</div><div><strong>Tamper suspicion</strong><small>Server/client phone event discrepancy is added.</small></div><span class="weight">0.08</span></div>
+        </div><div class="risk-card"><div class="eyebrow" style="color:#f5c96c">Example result</div><div class="risk-score"><b>86</b><span>/ 100 trust score</span></div><div class="meter"><i></i></div><p>risk = sum(clamped event confidence x signal weight) + discrepancy penalty<br><br>trust score = 100 - min(1, risk) x 100</p></div></div></div>
+        <div class="footer"><span>INTEGRITY AND HUMAN REVIEW</span><span>06</span></div>
+      </article>
+
+      <article class="slide" data-title="Outputs">
+        <div class="slide-head"><div><div class="eyebrow">06 / Product outputs</div><h2>Evidence packaged for a human decision</h2><p>The final system output is a review surface, not a black-box verdict.</p></div><span class="slide-num">07</span></div>
+        <div class="content"><div class="outputs"><div class="output-list">
+          <div class="output"><div class="tag">Interviewer</div><h3>Session dashboard</h3><p>Completion counts, averages, highest and lowest scores, and session health.</p></div>
+          <div class="output"><div class="tag">Interviewer</div><h3>Candidate ranking</h3><p>Completed candidates are sorted by overall score and assigned a rank.</p></div>
+          <div class="output"><div class="tag">Candidate</div><h3>Completion summary</h3><p>Overall score, response feedback, completion state, and next-step messaging.</p></div>
+          <div class="output"><div class="tag">Review</div><h3>Evidence trail</h3><p>Per-question answer, matched concepts, strengths, improvements, and integrity events.</p></div>
+        </div><div class="stack"><h3>Technology stack</h3><div class="stack-row"><b>UI</b><span>React 18 + Vite + Tailwind</span></div><div class="stack-row"><b>Interaction</b><span>Web Speech + MediaRecorder</span></div><div class="stack-row"><b>AI</b><span>OpenAI structured JSON</span></div><div class="stack-row"><b>API</b><span>Vercel functions / Node</span></div><div class="stack-row"><b>Persistence</b><span>MongoDB, MySQL, local store</span></div><div class="stack-row"><b>Visualization</b><span>Recharts + responsive views</span></div></div></div></div>
+        <div class="footer"><span>DECISION SUPPORT OUTPUTS</span><span>07</span></div>
+      </article>
+    </section>
+  </main>
+  <nav class="thumbnails" aria-label="Slide navigation"></nav>
+  <script>
+    const slides = [...document.querySelectorAll('.slide')];
+    const counter = document.querySelector('#counter');
+    const thumbs = document.querySelector('.thumbnails');
+    let current = 0;
+
+    slides.forEach((slide, index) => {
+      const button = document.createElement('button');
+      button.className = 'thumb';
+      button.title = slide.dataset.title;
+      button.setAttribute('aria-label', `Go to slide ${index + 1}: ${slide.dataset.title}`);
+      button.addEventListener('click', () => show(index));
+      thumbs.appendChild(button);
+    });
+
+    function show(index) {
+      current = (index + slides.length) % slides.length;
+      slides.forEach((slide, i) => slide.classList.toggle('active', i === current));
+      [...thumbs.children].forEach((button, i) => button.classList.toggle('active', i === current));
+      counter.textContent = `${String(current + 1).padStart(2, '0')} / ${String(slides.length).padStart(2, '0')}`;
+    }
+
+    document.querySelector('#prev').addEventListener('click', () => show(current - 1));
+    document.querySelector('#next').addEventListener('click', () => show(current + 1));
+    document.querySelector('#fullscreen').addEventListener('click', () => document.querySelector('.deck').requestFullscreen?.());
+    document.addEventListener('keydown', (event) => {
+      if (['ArrowRight', 'PageDown', ' '].includes(event.key)) { event.preventDefault(); show(current + 1); }
+      if (['ArrowLeft', 'PageUp'].includes(event.key)) { event.preventDefault(); show(current - 1); }
+      if (event.key === 'Home') show(0);
+      if (event.key === 'End') show(slides.length - 1);
+    });
+    show(0);
+  </script>
+</body>
+</html>

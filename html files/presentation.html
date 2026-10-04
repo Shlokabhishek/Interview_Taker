@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Interview Platform - Academic Presentation Deck</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --bg-card-dark: #1e293b;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --indigo-primary: #4f46e5;
+      --indigo-light: #e0e7ff;
+      --indigo-dark: #3730a3;
+      --blue-accent: #2563eb;
+      --border-color: #e2e8f0;
+      --card-bg: #ffffff;
+      --slide-bg: #f8fafc;
+      --shadow-sm: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+      --shadow-md: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -2px rgba(0,0,0,0.04);
+      --shadow-lg: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      height: 60px;
+      background: #090d16;
+      border-bottom: 1px solid #1e293b;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      color: #fff;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      font-size: 1.1rem;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-tag {
+      background: var(--indigo-primary);
+      color: #fff;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .nav-controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .slide-counter {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      color: #94a3b8;
+      background: #1e293b;
+      padding: 6px 14px;
+      border-radius: 8px;
+    }
+
+    .btn {
+      background: #1e293b;
+      color: #fff;
+      border: 1px solid #334155;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 0.875rem;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+    }
+
+    .btn:hover {
+      background: var(--indigo-primary);
+      border-color: var(--indigo-primary);
+      transform: translateY(-1px);
+    }
+
+    .btn-accent {
+      background: var(--indigo-primary);
+      border-color: var(--indigo-primary);
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      position: relative;
+    }
+
+    .slide-viewport {
+      width: 100%;
+      max-width: 1280px;
+      aspect-ratio: 16 / 9;
+      background: var(--slide-bg);
+      border-radius: 16px;
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .slide {
+      display: none;
+      width: 100%;
+      height: 100%;
+      padding: 44px 54px;
+      position: absolute;
+      top: 0;
+      left: 0;
+      overflow-y: auto;
+      animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .slide.active {
+      display: flex;
+      flex-direction: column;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.99); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .slide-header {
+      margin-bottom: 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .slide-category {
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: var(--indigo-primary);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+
+    .slide-title {
+      font-size: 1.85rem;
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: -0.025em;
+      line-height: 1.25;
+    }
+
+    .po-badge {
+      background: var(--indigo-light);
+      color: var(--indigo-dark);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.825rem;
+      font-weight: 700;
+      white-space: nowrap;
+      border: 1px solid #c7d2fe;
+    }
+
+    .grid-2,
+    .grid-3,
+    .grid-4,
+    .grid-5 {
+      flex: 1;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .grid-5 {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 14px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 22px 26px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-accent {
+      background: #eef2ff;
+      border-color: #c7d2fe;
+    }
+
+    .card-accent .card-title {
+      color: var(--indigo-dark);
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--indigo-primary);
+      margin-bottom: 16px;
+    }
+
+    .bullet-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .bullet-list li {
+      font-size: 0.9rem;
+      color: #334155;
+      line-height: 1.5;
+      position: relative;
+      padding-left: 18px;
+    }
+
+    .bullet-list li::before {
+      content: "•";
+      color: var(--indigo-primary);
+      font-weight: 800;
+      font-size: 1.2rem;
+      position: absolute;
+      left: 0;
+      top: -1px;
+    }
+
+    .bullet-header {
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .slide-dark {
+      background: var(--bg-dark);
+      color: #fff;
+    }
+
+    .slide-dark .slide-title {
+      color: #fff;
+    }
+
+    .slide-dark .card {
+      background: var(--bg-card-dark);
+      border-color: #334155;
+      color: #f1f5f9;
+    }
+
+    .slide-dark .bullet-list li {
+      color: #cbd5e1;
+    }
+
+    .slide-dark .bullet-header {
+      color: #fff;
+    }
+
+    .hero-container {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      height: 100%;
+      max-width: 920px;
+      margin: 0 auto;
+    }
+
+    .hero-subtitle {
+      font-size: 1.35rem;
+      color: #a5b4fc;
+      margin-top: 14px;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    .hero-meta {
+      margin-top: 36px;
+      background: #1e293b;
+      border-left: 4px solid var(--indigo-primary);
+      padding: 20px 24px;
+      border-radius: 0 12px 12px 0;
+    }
+
+    .hero-meta p {
+      font-size: 0.95rem;
+      color: #e2e8f0;
+      margin-bottom: 8px;
+    }
+
+    .hero-meta p:last-child {
+      margin-bottom: 0;
+      color: #94a3b8;
+    }
+
+    .table-container {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      font-size: 0.875rem;
+    }
+
+    .table-container th {
+      background: var(--bg-dark);
+      color: #fff;
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 700;
+    }
+
+    .table-container td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+      color: #334155;
+      vertical-align: top;
+    }
+
+    .table-container tr:nth-child(even) {
+      background: #f1f5f9;
+    }
+
+    .table-container tr.highlight {
+      background: #e0e7ff;
+      font-weight: 600;
+      color: var(--indigo-dark);
+    }
+
+    .flow-diagram {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
+      gap: 12px;
+      align-items: center;
+      margin-top: 8px;
+    }
+
+    .flow-node {
+      min-height: 148px;
+      border-radius: 14px;
+      border: 1px solid #cbd5e1;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+      padding: 16px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .flow-node.accent {
+      background: linear-gradient(180deg, #eef2ff 0%, #e0e7ff 100%);
+      border-color: #a5b4fc;
+    }
+
+    .flow-node h3 {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 10px;
+    }
+
+    .flow-node p {
+      font-size: 0.8rem;
+      color: #475569;
+      line-height: 1.45;
+      margin-bottom: 8px;
+    }
+
+    .flow-node p:last-child {
+      margin-bottom: 0;
+    }
+
+    .flow-arrow {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--indigo-primary);
+      text-align: center;
+    }
+
+    .flow-note {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e3a8a;
+      font-size: 0.84rem;
+      line-height: 1.45;
+    }
+
+    .process-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-top: 18px;
+    }
+
+    .metric-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .metric-chip {
+      border-radius: 12px;
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 14px 16px;
+    }
+
+    .metric-chip strong {
+      display: block;
+      color: #ffffff;
+      font-size: 0.95rem;
+      margin-bottom: 4px;
+    }
+
+    .metric-chip span {
+      font-size: 0.78rem;
+      line-height: 1.4;
+      color: #cbd5e1;
+    }
+
+    .slide-footer {
+      margin-top: auto;
+      padding-top: 16px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span>AI Interview Platform</span>
+      <span class="brand-tag">Academic Defense</span>
+    </div>
+    <div class="nav-controls">
+      <button class="btn" onclick="prevSlide()">Prev</button>
+      <div class="slide-counter" id="counter">1 / 12</div>
+      <button class="btn" onclick="nextSlide()">Next</button>
+      <button class="btn btn-accent" onclick="toggleFullscreen()">Full Screen</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="slide-viewport" id="viewport">
+      <div class="slide slide-dark active" id="slide-1">
+        <div class="hero-container">
+          <div class="slide-category">Project Presentation & Technical Defense</div>
+          <h1 class="slide-title" style="font-size: 2.8rem;">AI INTERVIEW PLATFORM</h1>
+          <p class="hero-subtitle">An asynchronous interview system that combines avatar-guided interviews, AI-based scoring, resume-aware question generation, and integrity review support.</p>
+          <div class="hero-meta">
+            <p><strong>Mapped Program Outcomes:</strong> PO1 (Problem Definition) | PO4 (Project Concept) | PO5 (Literature Survey) | PO2 (Feasibility) | PO11 (Roadmap & Team Work)</p>
+            <p><strong>Presenter / Lead Developer:</strong> Shlok Abhishek | <strong>Stack:</strong> React 18, Vite, Node.js, Web Speech API, MediaRecorder, OpenAI APIs, MongoDB</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide" id="slide-2">
+        <div class="slide-header">
+          <div>
+            <div class="slide-category">1. Problem Definition & Objectives</div>
+            <h2 class="slide-title">Clarity of Problem Definition</h2>
+          </div>
+          <div class="po-badge">Outcome: PO1</div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">Current Recruitment Challenges</div>
+            <ul class="bullet-list">
+              <li><span class="bullet-header">High HR Effort:</span> Early-stage screening still consumes large amounts of interviewer time for repeated first-round conversations.</li>
+              <li><span class="bullet-header">Inconsistent Evaluation:</span> Different interviewers emphasize different criteria, making candidate comparison harder.</li>
+              <li><span class="bullet-header">Low Scalability:</span> A live panel cannot comfortably handle a large candidate pool in parallel.</li>
+              <li><span class="bullet-header">Weak Candidate Experience:</span> Simple forms and MCQs remove the conversational feel of a real interview.</li>
+              <li><span class="bullet-header">Review Blind Spots:</span> Remote interviews need better visibility into transcripts, recordings, and suspicious behavior signals.</li>
+            </ul>
+          </div>
+
+          <div class="card card-accent">
+            <div class="card-title">Problem Statement & Objectives</div>
+            <ul class="bullet-list">
+              <li><span class="bullet-header">Core Goal:</span> Build a browser-based platform that lets interviewers create one interview flow and evaluate many candidates asynchronously.</li>
+              <li><span class="bullet-header">Humanized Interaction:</span> Reuse interviewer image or recorded video plus browser speech playback so the interview feels guided rather than form-based.</li>
+              <li><span class="bullet-header">Smarter Question Design:</span> Generate role-specific questions from the job description and optionally personalize extra questions from the candidate resume.</li>
+              <li><span class="bullet-header">Automated Assessment:</span> Score answers with structured AI analysis and fall back to local heuristics when the API is unavailable.</li>
+              <li><span class="bullet-header">Integrity Support:</span> Capture phone-detection and interview-behavior signals to assist review without replacing human judgment.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <span>AI Interview Platform Presentation</span>
+          <span>Slide 2 of 12</span>
+        </div>
+      </div>
+
+      <div class="slide" id="slide-3">
+        <div class="slide-header">
+          <div>
+            <div class="slide-category">2. Project Concept & System Design</div>
+            <h2 class="slide-title">Description of Project Concept - Architecture & Workflows</h2>
+          </div>
+          <div class="po-badge">Outcome: PO4</div>
+        </div>
+
+        <div class="card card-accent">
+          <div class="card-title">System Architecture Diagram</div>
+          <div class="flow-diagram">
+            <div class="flow-node">
+              <h3>1. Interviewer Portal</h3>
+              <p>Create sessions, question weights, keywords, time limits, and evaluation criteria.</p>
+              <p>Save interviewer profile, avatar image or video, and public interview link settings.</p>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node accent">
+              <h3>2. API + Storage Layer</h3>
+              <p>Node and Vercel endpoints call OpenAI for question generation, resume parsing, and answer scoring.</p>
+              <p>Persist sessions and candidates in MongoDB when configured, otherwise local JSON or browser storage.</p>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node">
+              <h3>3. Candidate Interview Loop</h3>
+              <p>Candidate opens a shared link, registers, optionally uploads a resume, grants consent, and enters the interview room.</p>
+              <p>Avatar playback, speech recognition, timers, and recording capture the answer workflow.</p>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node accent">
+              <h3>4. Review + Ranking</h3>
+              <p>Each answer is analyzed, interview summaries are generated, integrity signals are aggregated, and candidates are ranked.</p>
+              <p>Local fallback scoring keeps the interview usable if AI endpoints fail.</p>
+            </div>
+          </div>
+          <div class="flow-note">
+            Primary flow: <strong>job description or resume input</strong> -> <strong>question generation</strong> -> <strong>recorded candidate responses</strong> -> <strong>AI analysis, integrity review, and shortlist dashboard</strong>.
+          </div>
+        </div>
+
+        <div class="process-grid">
+          <div class="card">
+            <div class="card-title">Implementation Modules</div>
+            <ul class="bullet-list">
+              <li><span class="bullet-header">Interviewer Side:</span> Dashboard, session editor, avatar training, candidate tracking, and settings.</li>
+              <li><span class="bullet-header">Candidate Side:</span> Registration, interview room, transcript capture, and completion summary.</li>
+              <li><span class="bullet-header">AI Services:</span> Question generation, resume analysis, response evaluation, and interview summary.</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Workflow Highlights</div>
+            <ul class="bullet-list">
+              <li><span class="bullet-header">Resume Personalization:</span> Candidate-specific questions are appended without duplicating base session questions.</li>
+              <li><span class="bullet-header">Integrity Pipeline:</span> Client phone events can be rechecked by the server before computing final signals.</li>
+              <li><span class="bullet-header">Portable Deployment:</span> The same flow works in local development, LAN mode, or Vercel deployment.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <span>AI Interview Platform Presentation</span>
+          <span>Slide 3 of 12</span>
+        </div>
+      </div>
+
+      <div class="slide" id="slide-4">
+        <div class="slide-header">
+          <div>
+            <div class="slide-category">2. Project Concept & System Design</div>
+            <h2 class="slide-title">Description of Project Concept - AI Scoring & Avatar Tech</h2>
+          </div>
+          <div class="po-badge">Outcome: PO4</div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">Avatar Playback & Speech Pipeline</div>
+            <ul class="bullet-list">
+              <li><span class="bullet-header">Avatar Configuration:</span> Interviewers can upload a cover image or record video to brand the interview experience.</li>
+              <li><span class="bullet-header">Speech Output:</span> Web Speech API reads each question with browser voices and replay support.</li>
+              <li><span class="bullet-header">Visual Feedback:</span> Speaking indicators, subtitles, and video playback create a guided interview feel.</li>
+              <li><span class="bullet-header">Answer Capture:</span> MediaRecorder stores video and audio while speech recognition builds the transcript used for scoring.</li>
+            </ul>
+          </div>
+
+          <div class="card card-accent">
+            <div class="card-title">Multi-Dimensional Candidate Assessment</div>
+            <ul class="bullet-list">
+              <li><span class="bullet-header">Server AI Output:</span> Structured JSON scores relevance, accuracy, confidence, keyword match, strengths, and improvements.</li>
+              <li><span class="bullet-header">Local Fallback:</span> Keyword, confidence, relevance, and skill heuristics reproduce a usable score path during API failure.</li>
+              <li><span class="bullet-header">Weighted Formula:</span> Overall score uses relevance 25%, accuracy 30%, confidence 20%, and keyword match 25%, then applies question weight.</li>
+              <li><span class="bullet-header">Interview Summary:</span> Per-question results roll up into average metrics, top strengths, top improvements, and skill trends.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="metric-strip">
+          <div class="metric-chip">
+            <strong>Question Input</strong>
+            <span>Job description, manual question bank, and optional resume profile</span>
+          </div>
+          <div class="metric-chip">
+            <strong>Answer Signals</strong>
+            <span>Transcript, response length, keyword coverage, and media capture</span>
+          </div>
+          <div class="metric-chip">
+            <strong>Integrity Signals</strong>
+            <span>Phone-detection events, anomaly markers, and server reverification</span>
+          </div>
+          <div class="metric-chip">
+            <strong>Output</strong>
+            <span>Ranked candidates, evidence summary, and reviewable recordings</span>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <span>AI Interview Platform Presentation</span>
+          <span>Slide 4 of 12</span>
+        </div>
+      </div>
+
+      <div class="slide" id="slide-5">
+        <div class="slide-header">
+          <div>
+            <div class="slide-category">3. Literature Survey & Related Work</div>
+            <h2 class="slide-title">Study of the Literature Survey</h2>
+          </div>
+          <div class="po-badge">Outcome: PO5</div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">Key Academic Research Literature</div>
+            <ul class="bullet-list">
+              <li><span class="bullet-header">Cappelli (2019):</span> Shows how hiring pipelines often become inefficient, slow, and difficult to scale.</li>
+              <li><span class="bullet-header">Levashina et al. (2014):</span> Structured interviews improve fairness but still require significant human effort.</li>
+              <li><span class="bullet-header">Salgado & Moscoso (2012):</span> Reinforces the value of structured evaluation for prediction quality.</li>
+              <li><span class="bullet-header">Devlin et al. (2019) and modern LLM work:</span> Support semantic understanding and rubric-based text evaluation.</li>
+              <li><span class="bullet-header">Virtual agent and TTS literature:</span> Motivates more engaging human-computer interview interaction than plain text bots.</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Comparative Literature Matrix</div>
+            <table class="table-container">
+              <thead>
+                <tr>
+                  <th>Feature</th>
+                  <th>Traditional HR</th>
+                  <th>Text Bots</th>
+                  <th>Proposed Platform</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Interview Presence</strong></td>
+                  <td>Human only</td>
+                  <td>Mostly text prompts</td>
+                  <td>Avatar-guided browser interview</td>
+                </tr>
+                <tr>
+                  <td><strong>Scoring Method</strong></td>
+                  <td>Manual and subjective</td>
+                  <td>Basic keyword checks</td>
+                  <td>Structured AI plus local heuristics</td>
+                </tr>
+                <tr>
+                  <td><strong>Personalization</strong></td>
+                  <td>Interviewer dependent</td>
+                  <td>Low</td>
+                  <td>JD-driven and resume-aware</td>
+                </tr>
+                <tr class="highlight">
+                  <td><strong>Integrity Monitoring</strong></td>
+                  <td>In-person supervision</td>
+                  <td>Usually none</td>
+                  <td>Phone signal review support</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <span>AI Interview Platform Presentation</span>
+          <span>Slide 5 of 12</span>
+        </div>
+      </div>
+
+      <div class="slide" id="slide-6">
+        <div class="slide-header">
+          <div>
+            <div class="slide-category">3. Literature Survey & Related Work</div>
+            <h2 class="slide-title">Study of the Literature Survey - Identified Gaps</h2>
+          </div>
+          <div class="po-badge">Outcome: PO5</div>
+        </div>
+
+        <div class="grid-3">
+          <div class="card">
+            <div class="card-title">Gap 1: Depersonalization</div>
+            <ul class="bullet-list">
+              <li><span class="bullet-header">Existing State:</span> Automated interview systems often reduce the process to forms or generic chatbots.</li>
+              <li><span class="bullet-header">Our Solution:</span> The project keeps a recognizable interviewer presence through avatar media, subtitles, and guided speech playback.</li>
+            </ul>
+          </div>
+
+          <div class="card card-accent">
+            <div class="card-title">Gap 2: Single Cloud Dependency</div>
+            <ul class="bullet-list">
+              <li><span class="bullet-header">Existing State:</span> Many AI interview tools depend on a single cloud path for both generation and evaluation.</li>
+              <li><span class="bullet-header">Our Solution:</span> This system adds local question and scoring heuristics so interview flow remains usable when AI calls fail.</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Gap 3: Remote Cheating Visibility</div>
+            <ul class="bullet-list">
+              <li><span class="bullet-header">Existing State:</span> Asynchronous tools give interviewers little context about off-screen assistance or suspicious behavior.</li>
+              <li><span class="bullet-header">Our Solution:</span> The app records phone-detection and anomaly events, then combines them into an integrity score for manual review.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <span>AI Interview Platform Presentation</span>
+          <span>Slide 6 of 12</span>
+        </div>
+      </div>
+
+      <div class="slide" id="slide-7">
+        <div class="slide-header">
+          <div>
+            <div class="slide-category">4. Project Feasibility Analysis</div>
+            <h2 class="slide-title">Project Feasibility - Technical & Operational</h2>
+          </div>
+          <div class="po-badge">Outcome: PO2</div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">Technical Feasibility & Architecture</div>
+            <ul class="bullet-list">
+              <li><span class="bullet-header">Frontend Stack:</span> React 18, Vite, TailwindCSS, React Router, and reusable UI components support fast development.</li>
+              <li><span class="bullet-header">Native Browser APIs:</span> Web Speech and MediaRecorder reduce dependency on external client SDKs.</li>
+              <li><span class="bullet-header">Backend Options:</span> Local Node HTTP server for development plus Vercel-style API routes for deployment.</li>
+              <li><span class="bullet-header">Persistence Layers:</span> MongoDB for shared data, JSON file fallback on the local server, and localStorage for browser-side continuity.</li>
+              <li><span class="bullet-header">AI Integration:</span> OpenAI structured JSON calls power question generation, resume extraction, and response analysis.</li>
+            </ul>
+          </div>
+
+          <div class="card card-accent">
+            <div class="card-title">Operational & Usability Feasibility</div>
+            <ul class="bullet-list">
+              <li><span class="bullet-header">Zero Friction:</span> Candidates join by URL without account creation or software installation.</li>
+              <li><span class="bullet-header">Practical Workflow:</span> Interviewers can generate questions, edit rubrics, share links, and review candidates from one portal.</li>
+              <li><span class="bullet-header">Cross-Device Use:</span> LAN mode and deployable API routes make demos and shared review feasible.</li>
+              <li><span class="bullet-header">Failure Tolerance:</span> When AI services are unavailable, local generators and scorers preserve a simplified interview workflow.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <span>AI Interview Platform Presentation</span>
+          <span>Slide 7 of 12</span>
+        </div>
+      </div>
+
+      <div class="slide" id="slide-8">
+        <div class="slide-header">
+          <div>
+            <div class="slide-category">4. Project Feasibility Analysis</div>
+            <h2 class="slide-title">Project Feasibility - Economic, Legal & Ethical</h2>
+          </div>
+          <div class="po-badge">Outcome: PO2</div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">Economic Feasibility & ROI</div>
+            <ul class="bullet-list">
+              <li><span class="bullet-header">Minimal Infrastructure:</span> The platform can run locally for demos and development, reducing early hosting overhead.</li>
+              <li><span class="bullet-header">Selective AI Usage:</span> AI calls are limited to question generation, resume analysis, and answer scoring rather than continuous live streaming.</li>
+              <li><span class="bullet-header">Client-Side Offloading:</span> Speech playback, transcription, recording, and most integrity capture run in the browser.</li>
+              <li><span class="bullet-header">Operational ROI:</span> One interviewer can review more candidates asynchronously instead of scheduling repeated live screening calls.</li>
+            </ul>
+          </div>
+
+          <div class="card card-accent">
+            <div class="card-title">Legal, Ethical & Privacy Feasibility</div>
+            <ul class="bullet-list">
+              <li><span class="bullet-header">Consent-Driven Flow:</span> Candidate registration explicitly requests consent before integrity monitoring is activated.</li>
+              <li><span class="bullet-header">Privacy Boundaries:</span> The system stores only the signals needed for review and supports local-first operation during development.</li>
+              <li><span class="bullet-header">Human Review Required:</span> Integrity limitations are documented; suspicious events support interviewer review and are not auto-rejection rules.</li>
+              <li><span class="bullet-header">Bias Reduction Goal:</span> Structured rubrics and transcript-based scoring improve consistency, but human oversight is still necessary.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <span>AI Interview Platform Presentation</span>
+          <span>Slide 8 of 12</span>
+        </div>
+      </div>
+
+      <div class="slide" id="slide-9">
+        <div class="slide-header">
+          <div>
+            <div class="slide-category">5. Roadmap & Team Work Distribution</div>
+            <h2 class="slide-title">Roadmap of Project - Timeline & Development Phases</h2>
+          </div>
+          <div class="po-badge">Outcome: PO11</div>
+        </div>
+
+        <div class="grid-5">
+          <div class="card">
+            <div class="card-title" style="font-size: 0.95rem;">Phase 1: Planning</div>
+            <div style="font-size: 0.75rem; font-weight: 700; color: var(--indigo-primary); margin-bottom: 10px;">Weeks 1 - 2</div>
+            <ul class="bullet-list" style="font-size: 0.8rem;">
+              <li>Define project scope and program outcomes</li>
+              <li>Select React, Vite, Node, and storage approach</li>
+            </ul>
+          </div>
+
+          <div class="card card-accent">
+            <div class="card-title" style="font-size: 0.95rem;">Phase 2: Portals</div>
+            <div style="font-size: 0.75rem; font-weight: 700; color: var(--indigo-primary); margin-bottom: 10px;">Weeks 3 - 4</div>
+            <ul class="bullet-list" style="font-size: 0.8rem;">
+              <li>Build interviewer dashboard and session creator</li>
+              <li>Build candidate registration and interview views</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <div class="card-title" style="font-size: 0.95rem;">Phase 3: Speech</div>
+            <div style="font-size: 0.75rem; font-weight: 700; color: var(--indigo-primary); margin-bottom: 10px;">Weeks 5 - 6</div>
+            <ul class="bullet-list" style="font-size: 0.8rem;">
+              <li>Add avatar playback, TTS, STT, and recording</li>
+              <li>Refine interview flow and answer capture</li>
+            </ul>
+          </div>
+
+          <div class="card card-accent">
+            <div class="card-title" style="font-size: 0.95rem;">Phase 4: AI & Scoring</div>
+            <div style="font-size: 0.75rem; font-weight: 700; color: var(--indigo-primary); margin-bottom: 10px;">Weeks 7 - 8</div>
+            <ul class="bullet-list" style="font-size: 0.8rem;">
+              <li>Integrate question generation and resume parsing</li>
+              <li>Add structured scoring and local fallback logic</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <div class="card-title" style="font-size: 0.95rem;">Phase 5: Integrity</div>
+            <div style="font-size: 0.75rem; font-weight: 700; color: var(--indigo-primary); margin-bottom: 10px;">Weeks 9 - 12</div>
+            <ul class="bullet-list" style="font-size: 0.8rem;">
+              <li>Add integrity review pipeline and testing</li>
+              <li>Prepare documentation, deck, and paper</li>
+            </ul>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <span>AI Interview Platform Presentation</span>
+          <span>Slide 9 of 12</span>
+        </div>
+      </div>
+
+      <div class="slide" id="slide-10">
+        <div class="slide-header">
+          <div>
+            <div class="slide-category">5. Roadmap & Team Work Distribution</div>
+            <h2 class="slide-title">Distribution of Work Among Team</h2>
+          </div>
+          <div class="po-badge">Outcome: PO11</div>
+        </div>
+
+        <div class="card" style="flex: 1;">
+          <div class="card-title">Responsibility Matrix</div>
+          <table class="table-container">
+            <thead>
+              <tr>
+                <th>Module / Area</th>
+                <th>Lead Role</th>
+                <th>Key Responsibilities & Deliverables</th>
+                <th>Program Outcome</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Frontend UI & Layouts</strong></td>
+                <td>Shlok Abhishek</td>
+                <td>React SPA architecture, routing, Tailwind interface, candidate and interviewer views</td>
+                <td>PO4</td>
+              </tr>
+              <tr class="highlight">
+                <td><strong>Avatar & Speech Pipeline</strong></td>
+                <td>Shlok Abhishek</td>
+                <td>Avatar trainer, browser TTS, speech recognition, recording flow, and playback controls</td>
+                <td>PO4</td>
+              </tr>
+              <tr>
+                <td><strong>Backend API & AI Scoring</strong></td>
+                <td>Shlok Abhishek</td>
+                <td>API handlers, structured AI prompts, local fallback scoring, MongoDB and JSON persistence</td>
+                <td>PO1 / PO2</td>
+              </tr>
+              <tr class="highlight">
+                <td><strong>Resume & Question Intelligence</strong></td>
+                <td>Shlok Abhishek</td>
+                <td>Resume parsing, JD-based question generation, personalized follow-up question flow</td>
+                <td>PO2</td>
+              </tr>
+              <tr>
+                <td><strong>Integrity, Testing & Documentation</strong></td>
+                <td>Shlok Abhishek</td>
+                <td>Phone-detection review, testing, README, presentation, and research paper</td>
+                <td>PO5 / PO11</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="slide-footer">
+          <span>AI Interview Platform Presentation</span>
+          <span>Slide 10 of 12</span>
+        </div>
+      </div>
+
+      <div class="slide" id="slide-11">
+        <div class="slide-header">
+          <div>
+            <div class="slide-category">6. System Implementation & Artifacts</div>
+            <h2 class="slide-title">System Demonstration & Key Deliverables</h2>
+          </div>
+          <div class="po-badge">Outcome: PO4 / Presentation</div>
+        </div>
+
+        <div class="grid-4">
+          <div class="card">
+            <div class="card-title">1. Interviewer Dashboard & Avatar</div>
+            <ul class="bullet-list">
+              <li><span class="bullet-header">Avatar Trainer:</span> Upload image or video assets, preview the avatar, and save interviewer branding into sessions.</li>
+              <li><span class="bullet-header">Session Builder:</span> Create interviews with manual or AI-generated questions, weights, keywords, and timings.</li>
+            </ul>
+          </div>
+
+          <div class="card card-accent">
+            <div class="card-title">2. Candidate Interactive Interview Room</div>
+            <ul class="bullet-list">
+              <li><span class="bullet-header">Guided Interview Loop:</span> Avatar playback, subtitles, timers, and answer submission keep the session structured.</li>
+              <li><span class="bullet-header">Real-Time Capture:</span> Speech-to-text, webcam recording, and per-question response storage support later review.</li>
+            </ul>
+          </div>
+
+          <div class="card card-accent">
+            <div class="card-title">3. Automated Candidate Evaluation</div>
+            <ul class="bullet-list">
+              <li><span class="bullet-header">Structured Scoring:</span> Every answer returns evidence summary, strengths, improvements, and weighted scores.</li>
+              <li><span class="bullet-header">Ranked Review:</span> Interview summaries and candidate leaderboards help shortlist faster.</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <div class="card-title">4. Interview Integrity & Artifacts</div>
+            <ul class="bullet-list">
+              <li><span class="bullet-header">Integrity Signals:</span> Client phone events, anomaly markers, and server reverification contribute to a review score.</li>
+              <li><span class="bullet-header">Project Outputs:</span> Frontend app, local backend, Vercel APIs, README, presentation deck, and research paper are present in the repo.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <span>AI Interview Platform Presentation</span>
+          <span>Slide 11 of 12</span>
+        </div>
+      </div>
+
+      <div class="slide slide-dark" id="slide-12">
+        <div class="slide-header">
+          <div>
+            <div class="slide-category">Conclusion & Future Work</div>
+            <h2 class="slide-title">Summary & Project Conclusion</h2>
+          </div>
+          <div class="po-badge" style="background:#3730a3; color:#fff; border-color:#4f46e5;">Academic Defense</div>
+        </div>
+
+        <div class="card" style="flex: 1; justify-content: center;">
+          <ul class="bullet-list" style="gap: 20px;">
+            <li><span class="bullet-header">Project Outcome:</span> The repository demonstrates a full interview lifecycle: session design, resume-aware questioning, guided candidate interview, AI scoring, integrity review, and ranking.</li>
+            <li><span class="bullet-header">Program Outcomes Satisfied:</span> PO1, PO4, PO5, PO2, and PO11 remain clearly represented through the current implementation and documentation.</li>
+            <li><span class="bullet-header">Key Deliverables:</span> React/Vite web app, local and serverless backend paths, persistence options, documentation, presentation deck, and research paper.</li>
+            <li><span class="bullet-header">Future Scope:</span> Stronger object detection, richer multimodal assessment, multilingual voice support, analytics dashboards, and production-grade access control.</li>
+          </ul>
+        </div>
+        <div class="slide-footer" style="border-color:#334155; color:#94a3b8;">
+          <span>AI Interview Platform Presentation</span>
+          <span>Slide 12 of 12</span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let currentSlide = 1;
+    const totalSlides = 12;
+
+    function showSlide(index) {
+      if (index < 1) index = 1;
+      if (index > totalSlides) index = totalSlides;
+
+      document.querySelectorAll('.slide').forEach((slide, i) => {
+        slide.classList.toggle('active', (i + 1) === index);
+      });
+
+      currentSlide = index;
+      document.getElementById('counter').innerText = `${currentSlide} / ${totalSlides}`;
+    }
+
+    function prevSlide() {
+      showSlide(currentSlide - 1);
+    }
+
+    function nextSlide() {
+      showSlide(currentSlide + 1);
+    }
+
+    function toggleFullscreen() {
+      const elem = document.getElementById('viewport');
+      if (!document.fullscreenElement) {
+        elem.requestFullscreen().catch((err) => {
+          alert(`Error attempting to enable full-screen mode: ${err.message}`);
+        });
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') {
+        nextSlide();
+      } else if (e.key === 'ArrowLeft') {
+        prevSlide();
+      }
+    });
+  </script>
+</body>
+</html>

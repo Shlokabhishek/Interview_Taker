@@ -1,0 +1,513 @@
+An AI-Driven Automated Interview Platform with
+Avatar-Based Candidate Assessment
+Design, Implementation, and Evaluation
+Shlok Abhishek
+Independent Researcher
+India
+Email: shlokabhishek@example.com
+Abstract—The rapid growth of remote hiring has created
+demand for interview systems that scale without sacrificing
+consistency or candidate experience. This paper presentsAI
+Interview Platform, a web-based system that lets recruiting teams
+run automated, asynchronous video interviews through a per-
+sonalized AI avatar. The platform combines a React single-page
+application with a serverless backend, and uses a large language
+model (LLM) for question generation, response evaluation, and
+candidate ranking, with a deterministic rule-based engine as a
+fallback whenever the LLM is unavailable. A distinguishing fea-
+ture is the ability to synthesize an interviewer avatar from an HR
+professional’s photographs and voice, paired with text-to-speech
+(TTS) and speech-to-text (STT) for a conversational interview
+flow. The system also includes a lightweight, privacy-preserving
+computer-vision heuristic that flags likely phone use during
+recording. We describe the architecture, a five-dimension scoring
+model (relevance, accuracy, confidence, keyword coverage, and
+skill signal), and the graceful-degradation strategy that keeps
+the platform operational under API outages or rate limits. We
+report a functional and qualitative evaluation of the implemented
+system and, because automated hiring tools now fall under active
+legal and regulatory scrutiny (e.g., NYC Local Law 144, the
+Illinois AI Video Interview Act, and the EU AI Act’s high-
+risk classification of employment AI), we discuss the fairness,
+transparency, and auditability requirements the platform would
+need to satisfy before production deployment. We position this
+as a systems and design contribution rather than a validated
+hiring instrument, and we outline the empirical study needed to
+establish predictive validity and demographic fairness prior to
+real-world use.
+Index Terms—Artificial Intelligence, Large Language Models,
+Automated Interviewing, AI Avatar, Speech Processing, Candi-
+date Assessment, Algorithmic Fairness, Human-Computer Inter-
+action
+I. INTRODUCTION
+Traditional hiring processes depend heavily on human judg-
+ment, which creates well-documented challenges around scala-
+bility, consistency, and objectivity. As organizations grow, HR
+teams are often overwhelmed by application volume, leading
+to long hiring cycles, scheduling bottlenecks, and interviewer-
+to-interviewer variability in scoring [1], [2]. Structured in-
+terviews reduce some of this variability but remain labor-
+intensive and difficult to standardize across many interviewers
+and requisitions.
+Advances in natural language processing (NLP) and large
+language models (LLMs) have made it feasible to automate
+large parts of the recruitment pipeline: generating context-
+aware questions, evaluating open-ended responses semanti-
+cally, and producing evidence-based scores. However, most
+existing automated screening tools present candidates with
+static forms or text-based chatbots, which strips away the
+interpersonal cues that matter for assessing communication
+and interpersonal skills, and can leave candidates feeling that
+they are being evaluated by an opaque system rather than
+engaged in a conversation.
+This paper describesAI Interview Platform, a web system
+that aims to preserve more of the human interview experience
+while automating the surrounding workflow. An AI avatar,
+trained from an interviewer’s photographs and voice samples,
+delivers questions via TTS and video, and candidates respond
+through the browser’s microphone and camera. The system
+automates the interview lifecycle end to end: session creation,
+question generation, candidate registration, response capture,
+semantic scoring, and ranking.
+At the same time, automated video-interview tools have
+drawn substantial legal and civil-rights scrutiny in recent years.
+Vendors such as HireVue faced a 2019 FTC complaint from
+the Electronic Privacy Information Center (EPIC) alleging that
+its facial-analysis scoring was unprovable and biased, and the
+company removed facial analysis from its product in January
+2021 [7]. More recently, the ACLU of Colorado filed an EEOC
+and state civil-rights complaint on behalf of a deaf, Indigenous
+former Intuit employee, alleging that an AI-scored video
+interview penalized her communication style and that a request
+for human-generated captioning as an accommodation was
+denied [8], [9]. Separately, New York City’s Local Law 144
+now requires employers using automated employment decision
+tools to commission independent annual bias audits, publish
+impact-ratio results, and give candidates advance notice [10],
+Illinois has required disclosure and consent for AI-analyzed
+video interviews since 2020 [11], and the EU AI Act classifies
+employment-related AI systems as high-risk, subjecting them
+to transparency, accuracy, and human-oversight obligations
+[11]. This regulatory context directly shapes what a system
+like ours must support — disclosure, auditability, and human
+oversight — and we return to it in Section VII.
+The primary contributions of this work are as follows.
+•We design and implement a full-stack, serverless-ready
+AI interview platform with separate interviewer and can-
+didate portals.
+•We propose a personalized AI avatar pipeline that com-
+bines static imagery, optional video, and TTS to deliver
+a more conversational interview experience than form- or
+chatbot-based screening.
+•We develop a dual-mode question-generation engine:
+an LLM-driven mode that produces role- and resume-
+tailored questions, and a deterministic rule-based mode
+that keeps the system functional without external AI
+connectivity.
+•We present a five-dimension scoring methodology (rele-
+vance, accuracy, confidence, keyword coverage, and skill
+presence) with a matching rule-based fallback analyzer,
+so that scoring degrades gracefully rather than failing
+outright.
+•We implement a client-side, privacy-preserving heuristic
+for flagging likely unauthorized phone use during record-
+ing, without transmitting camera frames to a server.
+•We discuss, in light of current litigation and regulation
+(Local Law 144, the Illinois AI Video Interview Act, the
+EU AI Act), the auditing, disclosure, and accommodation
+mechanisms that would be required before such a system
+could be responsibly deployed in production hiring.
+The remainder of this paper is organized as follows. Sec-
+tion II reviews related work on automated interviewing and on
+the regulatory response to AI hiring tools. Section III describes
+the system architecture. Section IV details the core methodol-
+ogy. Section V presents implementation specifics. Section VI
+reports our evaluation and its limitations. Section VII discusses
+fairness and compliance requirements. Section VIII concludes
+and outlines future work.
+II. RELATEDWORK
+A. Automated Interview Scoring
+Early automated interview systems relied on structured
+question banks and keyword matching [3]. These approaches
+are inexpensive to run but cannot capture semantic nuance
+or reward well-phrased answers that avoid the exact expected
+keywords. Transformer-based language models, from BERT
+to instruction-tuned GPT-family models, have since been ap-
+plied to semantic similarity scoring and open-ended answer
+evaluation [4], [5], enabling systems to move beyond literal
+keyword overlap. Our platform builds on this line of work by
+using an instruction-tuned LLM for both question generation
+and holistic, multi-dimensional scoring, while retaining a
+deterministic scorer as a fallback for reliability.
+B. Avatars and Conversational Agents
+Text-to-speech and computer-vision techniques have en-
+abled digital humans and virtual agents in customer service,
+training, and tutoring contexts [6]. The application of a
+personalizedavatar, trained on a specific HR professional’s
+likeness and voice, to the interview domain is comparatively
+underexplored. Our system contributes to this space by pairing
+avatar personalization with the automated, multi-dimensional
+assessment pipeline described in Section IV.
+C. Bias, Litigation, and Regulation of AI Hiring Tools
+A growing body of evidence documents fairness failures
+in commercial AI hiring tools. EPIC’s 2019 FTC complaint
+against HireVue argued that facial-analysis-based scoring was
+not scientifically validated and disproportionately disadvan-
+taged candidates who did not match the system’s train-
+ing distribution, including non-native English speakers and
+candidates with disabilities; HireVue subsequently dropped
+facial analysis in January 2021 [7]. The EEOC’s first AI-
+discrimination settlement involved iTutorGroup, where auto-
+mated screening software allegedly rejected applicants on the
+basis of age [9]. In 2025, the ACLU of Colorado filed a
+complaint against Intuit and HireVue alleging that an AI-
+scored video interview relying on automated speech recog-
+nition disadvantaged a deaf, Indigenous candidate whose ac-
+commodation request was denied [8], [9]. These cases moti-
+vate treating disclosure, human oversight, and accommodation
+support as first-class design requirements rather than after-the-
+fact policy add-ons, which is reflected in the platform’s design
+(Section IV) and discussed further in Section VII.
+On the regulatory side, Illinois has required employers to
+disclose AI use, explain how it works, and obtain candidate
+consent for AI-analyzed video interviews since 2020 [11].
+NYC Local Law 144, in force since July 2023, requires an
+independent annual bias audit of any automated employment
+decision tool, publication of selection-rate and scoring-rate
+impact ratios by race, ethnicity, and sex, and at least ten
+business days of advance notice to candidates [10]. The EU
+AI Act designates employment-related AI systems, including
+CV-screening and interview-scoring software, as high-risk,
+imposing conformity assessment, transparency, and human-
+oversight duties on providers and deployers [11]. Any produc-
+tion deployment of the platform described here would need to
+be designed against these obligations from the outset.
+III. SYSTEMARCHITECTURE
+The platform follows a client-server architecture with a clear
+separation of concerns, illustrated in Fig. 1. The frontend is
+a React single-page application (SPA) optimized for modern
+browsers. The backend consists of serverless functions and a
+Node.js server that interface with an external LLM provider
+and a document-oriented database for persistence.
+A. Frontend Layer
+The frontend is built with React 18 and Vite, styled with
+TailwindCSS, and organized into two portals:
+•Interviewer Portal: dashboard, avatar training, session
+management, question creation, candidate tracking with
+AI-derived scores and rankings, and configuration set-
+tings.
+•Candidate Portal: registration via unique links, the AI-
+conducted interview experience, live transcription, and
+progress tracking.
+Architectural Overview
+React SPA (Interviewer / Candidate Portals)
+↕HTTP / JSON
+Serverless API Layer (Vercel Functions)
+↕
+LLM Provider (OpenAI)andPersistence (MongoDB)
+Local Fallback Analyzers (Rule-based)
+Fig. 1. High-level system architecture. When the LLM provider is unreach-
+able or rate-limited, requests are transparently served by the local fallback
+analyzers instead of failing.
+B. Backend Layer
+The backend is implemented as serverless functions de-
+ployed on Vercel, supplemented by a Node.js server for local
+development. It exposes endpoints for session management,
+candidate registration, question generation, resume analysis,
+and response analysis, and mediates all LLM calls so that
+API credentials remain server-side and are never exposed to
+the browser.
+C. Data Persistence
+Session and candidate data can be persisted locally in the
+browser via the Web Storage API, or in MongoDB for cross-
+device consistency. This lets the platform run in offline or
+single-device demo scenarios while remaining deployable at
+production scale.
+IV. METHODOLOGY
+A. Personalized AI Avatar
+HR professionals upload facial images and, optionally, a
+short demo video. During interviews, the avatar renders the
+interviewer’s image or video alongside TTS narration of each
+question, with rate and pitch tuned toward natural-sounding
+speech. Speech timing is synchronized with lightweight visual
+cues (a scaling animation and an active-speaking indicator).
+Candidates can replay questions, mute audio, and toggle sub-
+titles, which is also relevant to the captioning-accommodation
+concerns raised in Section VII.
+B. Speech and Media Processing
+The platform uses the Web Speech API for synthesis and
+recognition. Candidate answers are captured with the Medi-
+aRecorder API as WebM audio/video, with speech recognition
+producing a live transcript for downstream analysis. The
+pipeline supports camera/microphone toggling, pause/resume,
+and automatic duration limits per question.
+C. Question Generation
+Question generation operates in two modes. In AI-assisted
+mode, a structured prompt combining the job description and
+optional resume text is sent to the LLM, which returns role-
+specific questions with expected keywords, time limits, and
+per-question weights. In deterministic mode, a local rule-
+based generator extracts skills and project signals from the
+job description and resume to construct comparable questions
+without external connectivity. This dual-mode design guaran-
+tees the system remains usable when the LLM provider is
+unavailable.
+D. Multi-Dimensional Response Scoring
+Each answer is evaluated along five dimensions:
+•Relevance (R): how directly the answer addresses the
+question, computed from lexical overlap plus a response-
+length adjustment.
+•Accuracy (A): technical or practical correctness for
+domain-specific questions, derived from keyword match-
+ing combined with relevance.
+•Confidence (C): clarity and assertiveness of the response,
+inferred from linguistic confidence markers and length.
+•Keyword coverage (K): the proportion of expected
+concepts present in the answer.
+•Skill presence (S): detection of competencies such as
+communication, problem-solving, teamwork, leadership,
+technical depth, and adaptability, via curated keyword
+lexicons.
+The overall per-question score is
+Overall = min
+ 
+100, wRR+w AA+w CC+w KK
+
+·W,(1)
+with weightsw R = 0.25,w A = 0.30,w C = 0.20,w K = 0.25,
+andWa per-question importance factor set at question-
+creation time.Sis reported alongside the numeric score as
+a competency profile rather than folded into Eq. 1, since skill
+presence is better presented qualitatively than compressed into
+a single scalar. When the LLM is reachable, an instruction-
+based prompt with a structured JSON schema produces cal-
+ibratedR,A,C,Kvalues together with evidence-based
+strengths and improvement notes; when it is not, the platform
+transparently falls back to the deterministic scorer described
+above. Algorithm 1 summarizes the response-scoring proce-
+dure, including the fallback path.
+E. Candidate Ranking
+After all questions are answered, the platform aggregates
+per-question scores into summary statistics (mean relevance,
+accuracy, confidence, and overall score) and sorts candidates
+by aggregate score to produce a ranked shortlist. We treat this
+ranking as a decision-support signal for a human recruiter
+rather than an autonomous accept/reject decision; see Sec-
+tion VII.
+F . Phone-Usage Detection
+To support interview integrity, the platform implements a
+lightweight client-side heuristic: downsampled camera frames
+are analyzed via connected-component labeling to detect dark,
+high-contrast rectangular regions with aspect ratios consistent
+with a handheld phone. When such a region is detected during
+active recording, a warning is surfaced to the candidate and
+the event is logged through a callback for later review by a
+Algorithm 1Response Scoring with Graceful Degradation
+Require:candidate answera, questionqwith expected key-
+wordsκ, weightW
+1:scored←False
+2:ifLLM service reachablethen
+3:(R,A,C,K,notes)←LLMANALYZE(a,q,κ)
+4:ifresponse well-formedthen
+5:scored←True
+6:end if
+7:end if
+8:ifnot scoredthen
+9:R←LEXICALOVERLAP(a,q)
+10:K←|κ∩terms(a)|/|κ|
+11:A←f(K,R)
+12:C←CONFIDENCEHEURISTIC(a)
+13:notes←RULEBASEDFEEDBACK(a,κ)
+14:end if
+15:S←SKILLLEXICONMATCH(a)
+16:Overall←min(100, w RR+w AA+w CC+w KK)·W
+17:return(Overall,R,A,C,K,S,notes)
+TABLE I
+TECHNOLOGYSTACK
+Layer Technology
+UI Framework React 18, Vite 5
+Styling TailwindCSS 3
+Routing React Router 6
+Icons / Charts Lucide React, Recharts
+Speech Web Speech API (TTS/STT)
+Media Capture MediaRecorder API
+AI/LLM OpenAI (gpt-4o-mini)
+Backend Node.js / Vercel Serverless
+Database MongoDB
+human. All processing runs in the browser, so raw camera
+frames are never transmitted to the server; only the detection
+event is recorded. We are explicit that this is a coarse heuristic,
+not a certified proctoring solution (Section VI).
+V. IMPLEMENTATION
+The system is implemented with a JavaScript/TypeScript
+toolchain, summarized in Table I.
+A. Resilience and Graceful Degradation
+Every AI-dependent feature is wrapped with a fallback
+(Algorithm 1). If the LLM endpoint errors out or times
+out, question generation reverts to the local generator and
+response analysis reverts to the deterministic scorer. This keeps
+the platform operational under network constraints, provider
+outages, or rate limiting, at the cost of the semantic richness
+the LLM path provides.
+B. Privacy and Security
+Video and audio are captured and processed client-side
+wherever possible; the backend receives only text transcripts
+and metadata needed for analysis, and the phone-detection
+heuristic never uploads camera frames. LLM API credentials
+are held server-side only. These choices reduce, but do not
+by themselves guarantee, compliance with data-protection and
+AI-hiring regulation; Section VII discusses what additional
+controls a production deployment would need.
+VI. EVALUATION
+A. Functional Evaluation
+We evaluated the platform against its functional require-
+ments across both interviewer and candidate workflows. The
+avatar guided candidates through multi-question sessions end
+to end, and live transcription was usable in Chromium-based
+browsers, where the Web Speech API is best supported.
+Both question-generation modes (AI-assisted and determinis-
+tic) produced coherent, role-relevant questions, and the fall-
+back path activated correctly under simulated LLM outages,
+confirming that the degradation strategy behaves as designed.
+B. Scoring Behavior
+The deterministic scorer produces reproducible outputs
+across repeated runs on the same input, which is useful as
+a stable baseline and as a fallback guarantee. The LLM-based
+scorer produces richer, evidence-linked feedback but is non-
+deterministic across runs by nature of the underlying model.
+We have not yet conducted a controlled study comparing
+either scorer’s outputs to human interviewer judgments; we
+report this as a limitation rather than a validated capability.
+Establishing predictive or concurrent validity against expert
+human ratings, ideally with inter-rater reliability statistics (e.g.,
+Cohen’sκor intraclass correlation) and a demographically
+stratified sample, is necessary future work before the scoring
+model can be treated as more than a decision-support aid.
+C. Limitations
+•Speech recognition variability.Recognition quality
+varies by browser, performing best in Chrome and less
+reliably in Safari and Firefox, which can systematically
+disadvantage candidates on those browsers or with ac-
+cents or speech patterns underrepresented in the underly-
+ing recognition model’s training data [8].
+•Semantic ceiling of the fallback scorer.The deter-
+ministic analyzer cannot capture semantic nuance and
+may under-score well-phrased answers that use synonyms
+rather than the exact expected keywords.
+•Phone-detection false positives/negatives.The
+connected-component heuristic is a coarse approximation
+and will misfire under varied lighting or camera angles;
+it should be treated as a flag for human review, not an
+automated integrity determination.
+•No validated fairness or accuracy evaluation.We have
+not yet run a bias audit of the kind required under NYC
+Local Law 144 [10], nor a study of scoring parity across
+protected groups. Given documented fairness failures in
+comparable commercial tools [7]–[9], this is a prerequi-
+site for production use, not an optional extension.
+•Throughput constraints.Candidate volume and concur-
+rency are bounded by third-party LLM API rate limits
+and quotas.
+VII. ETHICALCONSIDERATIONS ANDREGULATORY
+ALIGNMENT
+Because this platform automates a legally sensitive decision
+process, we treat fairness and compliance as design require-
+ments rather than a discussion appendix.
+A. Disclosure and Consent
+Following the approach required under the Illinois AI Video
+Interview Act [11], candidates should be informed before the
+interview that an AI avatar and automated scoring are in use,
+given a plain-language explanation of what is measured, and
+asked for consent; the platform’s session-creation flow is a
+natural place to enforce this rather than leaving it to individual
+deployers.
+B. Accommodation Support
+The captioning and subtitle toggles described in Section IV
+are directly relevant to the accommodation failure alleged in
+the Intuit/HireVue case [8], [9]: a deaf candidate’s request
+for human-generated captioning was reportedly denied. A
+production deployment should treat accommodation requests
+(captioning, extended time, alternative response modalities) as
+a first-class, auditable workflow rather than a manual exception
+process.
+C. Bias Auditing
+NYC Local Law 144 requires an independent annual bias
+audit computing selection-rate and scoring-rate impact ra-
+tios across race, ethnicity, and sex, benchmarked against the
+EEOC’s four-fifths rule, with results published [10]. The
+platform’s structured scoring output (Section IV) is well suited
+to this kind of audit because per-dimension scores are logged
+individually, but the audit itself has not yet been performed and
+must precede any production use in a covered jurisdiction.
+D. Human Oversight
+Consistent with the EU AI Act’s treatment of employment
+AI as high-risk [11], we position the platform’s ranking output
+as decision support for a human recruiter, not an autonomous
+accept/reject mechanism, and recommend that any deployment
+keep a human in the loop for final decisions, particularly for
+candidates flagged by the phone-detection heuristic.
+VIII. CONCLUSION ANDFUTUREWORK
+We presented an AI-driven automated interview platform
+combining a personalized AI avatar, real-time speech process-
+ing, LLM-based question generation, and a five-dimension
+candidate scoring model with a deterministic fallback for
+resilience. The system demonstrates a feasible architecture
+for scalable, engaging asynchronous interviewing, but we are
+explicit that it is currently a systems and design contribution:
+we have not yet validated scoring accuracy against human
+judgment, nor audited it for demographic bias, and both are
+necessary before any production hiring use, particularly given
+documented fairness and accommodation failures in compara-
+ble commercial tools [7]–[9] and the regulatory obligations
+now in force in jurisdictions such as New York City and
+Illinois and under the EU AI Act [10], [11].
+Future work will proceed along three tracks. First, a human-
+subjects study comparing platform scores to blinded expert-
+interviewer ratings, with inter-rater reliability statistics and
+a demographically stratified candidate sample, to establish
+predictive validity. Second, a formal bias audit computing
+selection-rate and scoring-rate impact ratios across protected
+groups, following the NYC Local Law 144 methodology, prior
+to any production deployment. Third, technical improvements:
+speaker diarization and prosodic/emotion analysis to enrich
+soft-skill assessment (evaluated for fairness impact before
+adoption), a trained object-detection model to replace the
+current phone-detection heuristic, and multimodal fusion of
+video, audio, and transcript signals for a more holistic and
+better-calibrated candidate evaluation.
+REFERENCES
+[1] P. Cappelli, “Your approach to hiring is all wrong,”Harvard Business
+Review, vol. 97, no. 3, pp. 48–58, 2019.
+[2] J. M. Levashina, C. J. Hartwell, F. P. Morgeson, and M. A. Campion,
+“The structured employment interview: Narrative and quantitative review
+of the research literature,”Personnel Psychology, vol. 67, no. 1, pp. 241–
+293, 2014.
+[3] J. Salgado and S. Moscoso, “Validity of structured interviews,” inThe
+SAGE Handbook of Personnel Selection and Assessment, 2012, pp. 287–
+303.
+[4] J. Devlin, M.-W. Chang, K. Lee, and K. Toutanova, “BERT: Pre-training
+of deep bidirectional transformers for language understanding,” inProc.
+NAACL-HLT, 2019, pp. 4171–4186.
+[5] OpenAI, “GPT-4 technical report,”arXiv preprint arXiv:2303.08774,
+2023.
+[6] K. R. Sridhar and S. Narayanan, “Beyond perceptual thresholds: Speech
+synthesis and virtual agents,”IEEE Transactions on Affective Comput-
+ing, vol. 11, no. 1, pp. 1–14, 2020.
+[7] K. Harwell, “A face-scanning algorithm increasingly decides whether
+you deserve the job,”The Washington Post, Nov. 2019; Electronic
+Privacy Information Center, “EPIC complaint to the FTCin reHireVue,”
+Nov. 2019.
+[8] ACLU of Colorado, complaint filed with the U.S. Equal Employment
+Opportunity Commission and the Colorado Civil Rights Division against
+Intuit, Inc. and HireVue, Inc., Mar. 2025.
+[9] HR Dive and Bloomberg Law staff reporting on EEOC enforce-
+ment actions involving AI hiring tools, including the iTutorGroup
+age-discrimination settlement (2023) and the Intuit/HireVue disability-
+discrimination complaint (2025), 2023–2025.
+[10] New York City Council, “Local Law 144 of 2021: Automated Employ-
+ment Decision Tools,” effective Jan. 1, 2023, enforced from Jul. 5, 2023;
+NYC Department of Consumer and Worker Protection guidance.
+[11] Illinois General Assembly, “Artificial Intelligence Video Interview Act,”
+820 ILCS 42, effective 2020; European Parliament and Council, “Reg-
+ulation (EU) 2024/1689 (Artificial Intelligence Act),” 2024, Annex III
+classification of employment-related AI systems as high-risk.

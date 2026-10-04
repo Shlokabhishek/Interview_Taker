@@ -1,0 +1,179 @@
+{
+  "sessions": [
+    {
+      "id": "8580c2b5-b44f-4443-9899-68c8851e90dc",
+      "interviewerId": "local-interviewer",
+      "interviewerName": "Interviewer",
+      "link": "mFBqV9K6",
+      "status": "active",
+      "createdAt": "2026-07-29T04:57:13.326Z",
+      "updatedAt": "2026-07-29T04:57:20.504Z",
+      "questions": [
+        {
+          "id": "9dec86e8-b9ef-4687-8239-44f3b72d7e7f",
+          "text": "Walk me through how you would approach the most important responsibilities in this role in assistant lawyer.",
+          "type": "technical",
+          "timeLimit": 120,
+          "weight": 3,
+          "isImportant": true,
+          "expectedKeywords": [
+            "the core skills listed in the job description",
+            "the required tools and workflows"
+          ],
+          "evaluationCriteria": "Looks for a structured technical approach, sound tradeoffs, and practical delivery steps.",
+          "order": 1,
+          "source": "generated",
+          "category": "technical"
+        },
+        {
+          "id": "72d6e563-fb2b-435d-a48e-8ed8fda1d2c8",
+          "text": "What technical decisions would you make to deliver strong results with the core skills listed in the job description?",
+          "type": "technical",
+          "timeLimit": 120,
+          "weight": 3,
+          "isImportant": false,
+          "expectedKeywords": [
+            "the core skills listed in the job description",
+            "tradeoffs",
+            "performance"
+          ],
+          "evaluationCriteria": "Assess depth in architecture, implementation choices, and awareness of tradeoffs.",
+          "order": 2,
+          "source": "generated",
+          "category": "technical"
+        },
+        {
+          "id": "f6a72b59-a88d-4cff-93d9-83badb0e62f1",
+          "text": "Describe a project where you used the core skills listed in the job description to solve a meaningful business problem. What was your contribution?",
+          "type": "skill_specific",
+          "timeLimit": 120,
+          "weight": 2,
+          "isImportant": true,
+          "expectedKeywords": [
+            "the core skills listed in the job description",
+            "impact",
+            "ownership"
+          ],
+          "evaluationCriteria": "Strong answers include direct ownership, measurable outcomes, and specific execution details.",
+          "order": 3,
+          "source": "generated",
+          "category": "skill-specific"
+        },
+        {
+          "id": "bd5cbe7c-d217-4952-b112-3fb07038c8f9",
+          "text": "How have you kept your skills current in the required tools and workflows, and how would that help you succeed in this role?",
+          "type": "skill_specific",
+          "timeLimit": 120,
+          "weight": 2,
+          "isImportant": false,
+          "expectedKeywords": [
+            "the required tools and workflows",
+            "learning",
+            "best practices"
+          ],
+          "evaluationCriteria": "Looks for continuous learning, real application, and role alignment.",
+          "order": 4,
+          "source": "generated",
+          "category": "skill-specific"
+        },
+        {
+          "id": "fc588509-1ce2-4710-83b6-5aeaf304bf31",
+          "text": "Tell me about a time you had to balance speed, quality, and stakeholder expectations while working with cross-functional stakeholders.",
+          "type": "behavioral",
+          "timeLimit": 120,
+          "weight": 2,
+          "isImportant": false,
+          "expectedKeywords": [
+            "stakeholders",
+            "communication",
+            "prioritization"
+          ],
+          "evaluationCriteria": "Strong answers use a clear situation, actions, results, and communication strategy.",
+          "order": 5,
+          "source": "generated",
+          "category": "behavioral"
+        },
+        {
+          "id": "540cd9eb-f4d9-4dae-a950-bd41655bb3c0",
+          "text": "Describe a time you received tough feedback on your work. How did you respond, and what changed afterward?",
+          "type": "behavioral",
+          "timeLimit": 120,
+          "weight": 2,
+          "isImportant": false,
+          "expectedKeywords": [
+            "feedback",
+            "growth",
+            "improvement"
+          ],
+          "evaluationCriteria": "Looks for coachability, ownership, and evidence of improvement.",
+          "order": 6,
+          "source": "generated",
+          "category": "behavioral"
+        },
+        {
+          "id": "5a3e4b3d-fef8-4923-8020-fc4a08783f43",
+          "text": "Imagine you join as a assistant lawyer and discover that a key deliverable is slipping because requirements keep changing. What would you do first?",
+          "type": "situational",
+          "timeLimit": 120,
+          "weight": 2,
+          "isImportant": false,
+          "expectedKeywords": [
+            "prioritize",
+            "clarify",
+            "communicate"
+          ],
+          "evaluationCriteria": "Strong answers show structured triage, stakeholder alignment, and risk management.",
+          "order": 7,
+          "source": "generated",
+          "category": "scenario-based"
+        },
+        {
+          "id": "0a42b675-37db-43fb-a46c-a9b387e1fb85",
+          "text": "If you were responsible for the most important responsibilities in this role but had limited time and incomplete information, how would you decide what to tackle first?",
+          "type": "situational",
+          "timeLimit": 120,
+          "weight": 2,
+          "isImportant": false,
+          "expectedKeywords": [
+            "prioritization",
+            "risk",
+            "decision making"
+          ],
+          "evaluationCriteria": "Looks for judgment, prioritization framework, and sensible escalation points.",
+          "order": 8,
+          "source": "generated",
+          "category": "scenario-based"
+        }
+      ],
+      "candidates": [],
+      "settings": {
+        "totalDuration": 30,
+        "defaultTimePerQuestion": 120,
+        "allowLateEntry": true,
+        "showTimer": true,
+        "recordVideo": true,
+        "recordAudio": true
+      },
+      "avatarConfig": null,
+      "title": "assistant lawyer ",
+      "description": "",
+      "jobDescription": "assistant lawyer "
+    }
+  ],
+  "candidates": [
+    {
+      "id": "ac4b254a-73b9-478f-9d8e-ee8ddc86d26e",
+      "status": "registered",
+      "registeredAt": "2026-07-29T04:57:59.962Z",
+      "responses": [],
+      "analysis": null,
+      "overallScore": null,
+      "name": "satya",
+      "email": "satya@gmail.com",
+      "phone": "9334165328",
+      "sessionId": "8580c2b5-b44f-4443-9899-68c8851e90dc",
+      "resumeText": "",
+      "resumeInsights": null
+    }
+  ]
+}

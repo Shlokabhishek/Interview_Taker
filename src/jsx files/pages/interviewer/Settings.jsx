@@ -1,0 +1,210 @@
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { 
+  User, 
+  Mail, 
+  Building, 
+  Bell, 
+  Save,
+  Sparkles,
+  ArrowRight
+} from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { 
+  Card, 
+  CardHeader, 
+  CardTitle, 
+  CardContent, 
+  Button, 
+  Input,
+  Alert
+} from '../../components/shared';
+import { storage } from '../../services/app';
+
+const Settings = () => {
+  const { user, updateProfile } = useAuth();
+  
+  const [activeTab, setActiveTab] = useState('profile');
+  const [profileData, setProfileData] = useState({
+    name: user?.name || '',
+    email: user?.email || '',
+    company: user?.company || '',
+  });
+  const [saved, setSaved] = useState(false);
+  const [publicBaseUrl, setPublicBaseUrl] = useState(storage.get('publicBaseUrl') || '');
+  const [apiBaseUrl, setApiBaseUrl] = useState(storage.get('apiBaseUrl') || '');
+
+  const handleProfileChange = (field, value) => {
+    setProfileData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const saveProfile = async () => {
+    await updateProfile(profileData);
+    storage.set('publicBaseUrl', publicBaseUrl.trim());
+    storage.set('apiBaseUrl', apiBaseUrl.trim());
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  };
+
+  const tabs = [
+    { id: 'profile', label: 'Profile', icon: User },
+    { id: 'notifications', label: 'Notifications', icon: Bell },
+  ];
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+        <p className="text-gray-600 mt-1">Manage your account settings and preferences.</p>
+      </div>
+
+      {saved && (
+        <Alert type="success" message="Settings saved successfully!" />
+      )}
+
+      {/* Tabs */}
+      <div className="flex gap-2 border-b border-gray-200">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === tab.id
+                  ? 'border-primary-600 text-primary-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Profile Tab */}
+      {activeTab === 'profile' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Profile Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <Input
+              label="Full Name"
+              value={profileData.name}
+              onChange={(e) => handleProfileChange('name', e.target.value)}
+              icon={User}
+            />
+            <Input
+              label="Email Address"
+              type="email"
+              value={profileData.email}
+              onChange={(e) => handleProfileChange('email', e.target.value)}
+              icon={Mail}
+            />
+            <Input
+              label="Company"
+              value={profileData.company}
+              onChange={(e) => handleProfileChange('company', e.target.value)}
+              icon={Building}
+            />
+
+            <div className="grid sm:grid-cols-2 gap-6">
+              <Input
+                label="Public Base URL (Share Links)"
+                placeholder="https://192.168.1.10:3001"
+                value={publicBaseUrl}
+                onChange={(e) => setPublicBaseUrl(e.target.value)}
+              />
+              <Input
+                label="Backend API URL (Optional)"
+                placeholder="http://192.168.1.10:8787"
+                value={apiBaseUrl}
+                onChange={(e) => setApiBaseUrl(e.target.value)}
+              />
+            </div>
+            <p className="text-xs text-gray-500 -mt-3">
+              Use Public Base URL to generate interview links with your LAN IP instead of localhost. Leave Backend API URL empty on Vercel to use `/api` (don’t set it to `localhost` on a deployed site).
+            </p>
+
+            {/* Avatar Training Section */}
+            <div className="border-t pt-6">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-900 mb-1">AI Interviewer Avatar</h3>
+                  <p className="text-sm text-gray-600">
+                    {user?.avatarTrained 
+                      ? 'Your AI avatar has been trained and is ready to use.'
+                      : 'Train an AI avatar with your face and voice to conduct interviews.'
+                    }
+                  </p>
+                  {user?.avatarConfig?.trainedAt && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Trained on {new Date(user.avatarConfig.trainedAt).toLocaleDateString()}
+                    </p>
+                  )}
+                </div>
+                <Link to="/interviewer/avatar-training">
+                  <Button 
+                    variant={user?.avatarTrained ? "secondary" : "primary"} 
+                    icon={user?.avatarTrained ? ArrowRight : Sparkles}
+                    size="sm"
+                  >
+                    {user?.avatarTrained ? 'Manage' : 'Train Avatar'}
+                  </Button>
+                </Link>
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <Button variant="primary" icon={Save} onClick={saveProfile}>
+                Save Changes
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Notifications Tab */}
+      {activeTab === 'notifications' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Notification Preferences</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-4">
+              {[
+                { id: 'newCandidate', label: 'New candidate submissions', desc: 'Get notified when a candidate completes an interview' },
+                { id: 'sessionComplete', label: 'Session completed', desc: 'Get notified when all candidates have completed a session' },
+                { id: 'weeklyReport', label: 'Weekly summary', desc: 'Receive a weekly summary of interview activity' },
+                { id: 'marketing', label: 'Product updates', desc: 'Receive updates about new features and improvements' },
+              ].map((item) => (
+                <label key={item.id} className="flex items-start gap-4 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    defaultChecked={item.id !== 'marketing'}
+                    className="mt-1 w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                  />
+                  <div>
+                    <p className="font-medium text-gray-900">{item.label}</p>
+                    <p className="text-sm text-gray-500">{item.desc}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            <div className="flex justify-end">
+              <Button variant="primary" icon={Save}>
+                Save Preferences
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+};
+
+export default Settings;

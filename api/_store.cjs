@@ -1,4 +1,16 @@
 const { getMongoDb, mongoConfigured } = require('./_mongo.cjs');
+const {
+  mysqlConfigured,
+  getMysqlPool,
+  getSessionByLink: getMysqlSessionByLink,
+  listSessions: listMysqlSessions,
+  putSession: putMysqlSession,
+  patchSession: patchMysqlSession,
+  deleteSession: deleteMysqlSession,
+  putCandidate: putMysqlCandidate,
+  listCandidates: listMysqlCandidates,
+  patchCandidate: patchMysqlCandidate,
+} = require('./_mysql.cjs');
 
 const memory = (globalThis.__INTERVIEW_PRO_STORE ||= {
   sessions: new Map(), // session:<id> -> session
@@ -10,6 +22,16 @@ const memory = (globalThis.__INTERVIEW_PRO_STORE ||= {
 });
 
 const mongoEnabled = () => mongoConfigured();
+
+const withMysql = async (operation) => {
+  if (!mysqlConfigured()) return null;
+  try {
+    return { ok: true, value: await operation() };
+  } catch (error) {
+    console.error('[mysql] Falling back to the next storage adapter:', error.message);
+    return { ok: false, value: null };
+  }
+};
 
 const withCollection = async (name, fn) => {
   const db = await getMongoDb();
@@ -54,6 +76,9 @@ const hydrateMemoryCandidateIndexes = (candidate) => {
 const getSessionByLink = async (link) => {
   if (!link) return null;
 
+  const mysqlResult = await withMysql(() => getMysqlSessionByLink(link));
+  if (mysqlResult?.ok) return mysqlResult.value;
+
   const mongoSession = await withCollection('sessions', (collection) => {
     return collection.findOne({ link }, { projection: { _id: 0 } });
   });
@@ -71,6 +96,9 @@ const getSessionByLink = async (link) => {
 const putSession = async (session) => {
   if (!session?.id) return null;
 
+  const mysqlResult = await withMysql(() => putMysqlSession(session));
+  if (mysqlResult?.ok) return mysqlResult.value;
+
   hydrateMemorySessionIndexes(session);
 
   if (mongoEnabled()) {
@@ -84,6 +112,9 @@ const putSession = async (session) => {
 
 const listSessions = async (interviewerId) => {
   if (!interviewerId) return [];
+
+  const mysqlResult = await withMysql(() => listMysqlSessions(interviewerId));
+  if (mysqlResult?.ok) return mysqlResult.value;
 
   const mongoSessions = await withCollection('sessions', (collection) => {
     return collection.find({ interviewerId }, { projection: { _id: 0 } }).toArray();
@@ -104,6 +135,9 @@ const listSessions = async (interviewerId) => {
 
 const patchSession = async (id, updates) => {
   if (!id) return null;
+
+  const mysqlResult = await withMysql(() => patchMysqlSession(id, updates));
+  if (mysqlResult?.ok) return mysqlResult.value;
 
   const timestampedUpdates = {
     ...(updates || {}),
@@ -136,6 +170,9 @@ const patchSession = async (id, updates) => {
 
 const deleteSession = async (id) => {
   if (!id) return false;
+
+  const mysqlResult = await withMysql(() => deleteMysqlSession(id));
+  if (mysqlResult?.ok) return mysqlResult.value;
 
   const memoryExisting = memory.sessions.get(`session:${id}`) || null;
 
@@ -179,6 +216,9 @@ const deleteSession = async (id) => {
 const putCandidate = async (candidate) => {
   if (!candidate?.id) return null;
 
+  const mysqlResult = await withMysql(() => putMysqlCandidate(candidate));
+  if (mysqlResult?.ok) return mysqlResult.value;
+
   hydrateMemoryCandidateIndexes(candidate);
 
   if (mongoEnabled()) {
@@ -191,6 +231,9 @@ const putCandidate = async (candidate) => {
 };
 
 const listCandidates = async (sessionId) => {
+  const mysqlResult = await withMysql(() => listMysqlCandidates(sessionId));
+  if (mysqlResult?.ok) return mysqlResult.value;
+
   const mongoCandidates = await withCollection('candidates', (collection) => {
     const query = sessionId ? { sessionId } : {};
     return collection.find(query, { projection: { _id: 0 } }).toArray();
@@ -214,6 +257,9 @@ const listCandidates = async (sessionId) => {
 
 const patchCandidate = async (id, updates) => {
   if (!id) return null;
+
+  const mysqlResult = await withMysql(() => patchMysqlCandidate(id, updates));
+  if (mysqlResult?.ok) return mysqlResult.value;
 
   if (mongoEnabled()) {
     const updated = await withCollection('candidates', async (collection) => {
@@ -240,8 +286,11 @@ const patchCandidate = async (id, updates) => {
 };
 
 module.exports = {
-  kvEnabled: mongoEnabled,
+  kvEnabled: () => mongoEnabled() || mysqlConfigured(),
   mongoEnabled,
+  mysqlEnabled: mysqlConfigured,
+  getMysqlPool,
+  getMongoDb,
   getSessionByLink,
   putSession,
   listSessions,

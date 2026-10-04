@@ -1,12 +1,12 @@
 import http from 'node:http';
 import { existsSync, readFileSync, promises as fs } from 'node:fs';
 import path from 'node:path';
+import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { MongoClient } from 'mongodb';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
 const loadLocalEnv = () => {
   const envPath = path.join(process.cwd(), '.env');
   if (!existsSync(envPath)) return;
@@ -24,13 +24,32 @@ const loadLocalEnv = () => {
     const key = trimmed.slice(0, eqIdx).trim();
     const value = trimmed.slice(eqIdx + 1).trim();
 
-    if (!Object.prototype.hasOwnProperty.call(process.env, key)) {
+    if (!process.env[key]) {
       process.env[key] = value;
     }
   }
 };
 
 loadLocalEnv();
+
+const require = createRequire(import.meta.url);
+const generateQuestionsHandler = require('../api/generate-questions.js');
+const analyzeResponseHandler = require('../api/analyze-response.js');
+const analyzeResumeHandler = require('../api/analyze-resume.js');
+const integrityEventsHandler = require('../api/integrity-events.js');
+const {
+  kvEnabled: sharedPersistenceEnabled,
+  mysqlEnabled,
+  getMysqlPool,
+  getSessionByLink: storeGetSessionByLink,
+  listSessions: storeListSessions,
+  putSession: storePutSession,
+  patchSession: storePatchSession,
+  deleteSession: storeDeleteSession,
+  listCandidates: storeListCandidates,
+  putCandidate: storePutCandidate,
+  patchCandidate: storePatchCandidate,
+} = require('../api/_store.cjs');
 
 const PORT = Number(process.env.PORT || 8787);
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'db.json');
@@ -236,21 +255,60 @@ const server = http.createServer(async (req, res) => {
     const pathname = url.pathname.startsWith('/api/') ? url.pathname.slice(4) : url.pathname;
 
     if (req.method === 'GET' && pathname === '/health') {
-      const mongo = Boolean(await getMongoDb());
-      sendJson(res, 200, { ok: true, mongo, storage: mongo ? 'mongodb' : 'json' });
+      let mysql = false;
+      let mongo = false;
+      if (mysqlEnabled()) {
+        try {
+          mysql = Boolean(await getMysqlPool());
+        } catch (error) {
+          console.error('MySQL Pool Error in /health:', error);
+          mysql = false;
+        }
+      }
+      if (!mysql) mongo = Boolean(await getMongoDb());
+      sendJson(res, 200, {
+        ok: true,
+        mysql,
+        mongo,
+        storage: mysql ? 'mysql' : mongo ? 'mongodb' : 'json',
+      });
+      return;
+    }
+
+    if (pathname === '/generate-questions') {
+      await generateQuestionsHandler(req, res);
+      return;
+    }
+
+    if (pathname === '/analyze-response') {
+      await analyzeResponseHandler(req, res);
+      return;
+    }
+
+    if (pathname === '/analyze-resume') {
+      await analyzeResumeHandler(req, res);
+      return;
+    }
+
+    if (pathname === '/integrity/events') {
+      await integrityEventsHandler(req, res);
       return;
     }
 
     if (req.method === 'GET' && pathname === '/sessions') {
       const interviewerId = url.searchParams.get('interviewerId');
-      const sessions = await getSessions(interviewerId);
+      const sessions = sharedPersistenceEnabled()
+        ? await storeListSessions(interviewerId)
+        : await getSessions(interviewerId);
       sendJson(res, 200, sessions);
       return;
     }
 
     if (req.method === 'GET' && pathname === '/session-by-link') {
       const link = url.searchParams.get('link') || '';
-      const session = await getSessionByLink(link);
+      const session = sharedPersistenceEnabled()
+        ? await storeGetSessionByLink(link)
+        : await getSessionByLink(link);
       if (!session) {
         sendJson(res, 404, { error: 'Session not found' });
         return;
@@ -265,7 +323,8 @@ const server = http.createServer(async (req, res) => {
         sendJson(res, 400, { error: 'Missing session id' });
         return;
       }
-      await upsertSession(body);
+      if (sharedPersistenceEnabled()) await storePutSession(body);
+      else await upsertSession(body);
       sendJson(res, 200, body);
       return;
     }
@@ -275,7 +334,9 @@ const server = http.createServer(async (req, res) => {
 
       if (req.method === 'PATCH') {
         const updates = await readJsonBody(req);
-        const next = await patchSession(sessionId, updates);
+        const next = sharedPersistenceEnabled()
+          ? await storePatchSession(sessionId, updates)
+          : await patchSession(sessionId, updates);
         if (!next) {
           sendJson(res, 404, { error: 'Session not found' });
           return;
@@ -285,7 +346,9 @@ const server = http.createServer(async (req, res) => {
       }
 
       if (req.method === 'DELETE') {
-        const ok = await deleteSessionCascade(sessionId);
+        const ok = sharedPersistenceEnabled()
+          ? await storeDeleteSession(sessionId)
+          : await deleteSessionCascade(sessionId);
         if (!ok) {
           sendJson(res, 404, { error: 'Session not found' });
           return;
@@ -297,7 +360,9 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === 'GET' && pathname === '/candidates') {
       const sessionId = url.searchParams.get('sessionId');
-      const candidates = await getCandidates(sessionId);
+      const candidates = sharedPersistenceEnabled()
+        ? await storeListCandidates(sessionId)
+        : await getCandidates(sessionId);
       sendJson(res, 200, candidates);
       return;
     }
@@ -308,7 +373,8 @@ const server = http.createServer(async (req, res) => {
         sendJson(res, 400, { error: 'Missing candidate id' });
         return;
       }
-      await upsertCandidate(body);
+      if (sharedPersistenceEnabled()) await storePutCandidate(body);
+      else await upsertCandidate(body);
       sendJson(res, 200, body);
       return;
     }
@@ -317,7 +383,9 @@ const server = http.createServer(async (req, res) => {
       const candidateId = url.searchParams.get('id');
       if (req.method === 'PATCH') {
         const updates = await readJsonBody(req);
-        const next = await patchCandidate(candidateId, updates);
+        const next = sharedPersistenceEnabled()
+          ? await storePatchCandidate(candidateId, updates)
+          : await patchCandidate(candidateId, updates);
         if (!next) {
           sendJson(res, 404, { error: 'Candidate not found' });
           return;

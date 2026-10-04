@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Software Engineering Assignment - AI Interview Platform</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 0;
+    }
+
+    body {
+      margin: 0;
+      background: #eeeeee;
+      color: #000000;
+      font-family: "Times New Roman", Times, serif;
+      font-size: 12pt;
+      line-height: 1.5;
+    }
+
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 10mm auto;
+      padding: 25mm;
+      background: #ffffff;
+      box-sizing: border-box;
+      page-break-after: always;
+    }
+
+    .page:last-child {
+      page-break-after: auto;
+    }
+
+    h1, h2, h3 {
+      margin: 0 0 12pt;
+      font-weight: bold;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 20pt;
+      text-transform: uppercase;
+    }
+
+    h2 {
+      font-size: 16pt;
+      text-decoration: underline;
+    }
+
+    h3 {
+      font-size: 14pt;
+    }
+
+    p {
+      margin: 0 0 10pt;
+      text-align: justify;
+    }
+
+    ul {
+      margin: 0 0 12pt 22pt;
+      padding: 0;
+    }
+
+    li {
+      margin-bottom: 8pt;
+      text-align: justify;
+    }
+
+    .center {
+      text-align: center;
+    }
+
+    .details {
+      margin-top: 45pt;
+      line-height: 2.2;
+      font-size: 13pt;
+    }
+
+    .flowchart {
+      margin: 18pt 0;
+      text-align: center;
+    }
+
+    .box {
+      display: inline-block;
+      width: 125pt;
+      min-height: 38pt;
+      margin: 5pt;
+      padding: 8pt;
+      border: 1pt solid #000000;
+      vertical-align: middle;
+      text-align: center;
+      box-sizing: border-box;
+    }
+
+    .box-wide {
+      width: 170pt;
+    }
+
+    .box-small {
+      width: 95pt;
+    }
+
+    .arrow {
+      display: inline-block;
+      margin: 0 3pt;
+      font-size: 14pt;
+      vertical-align: middle;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10pt 0 14pt;
+    }
+
+    th, td {
+      border: 1pt solid #000000;
+      padding: 7pt;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .diagram-note {
+      font-size: 11pt;
+      margin-top: 6pt;
+    }
+
+    @media print {
+      body {
+        background: #ffffff;
+      }
+
+      .page {
+        margin: 0;
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <section class="page">
+    <h1>Software Engineering Assignment</h1>
+    <p class="center"><b>Topic:</b> Software Development Life Cycle Project</p>
+    <p class="center"><b>Selected System:</b> AI Interview Platform</p>
+
+    <div class="details">
+      <p><b>Submitted By:</b> ________________________________</p>
+      <p><b>Roll Number:</b> ________________________________</p>
+      <p><b>Class / Section:</b> ________________________________</p>
+      <p><b>Subject:</b> Software Engineering</p>
+      <p><b>Submitted To:</b> ________________________________</p>
+      <p><b>Date:</b> ________________________________</p>
+    </div>
+
+    <h2 style="margin-top: 60pt;">Introduction</h2>
+    <p>
+      This project is based on the Software Development Life Cycle. In this assignment I have selected an AI Interview Platform as the real world system. The platform helps interviewers create interview sessions, generate questions from a job description, collect candidate responses through video and speech, and analyze those responses using AI-based scoring. It is useful for companies, HR teams, technical interviewers, and candidates who need a structured remote interview process.
+    </p>
+    <p>
+      In many organizations, first-round interviews consume a lot of time and are difficult to scale. Manual interviews also suffer from inconsistency because different interviewers may ask different questions or use different evaluation standards. This project solves that problem by providing one centralized platform where the interviewer can prepare the interview once and evaluate many candidates asynchronously.
+    </p>
+  </section>
+
+  <section class="page">
+    <h2>Objectives of the Project</h2>
+    <ul>
+      <li><b>To solve a practical hiring problem:</b> The project addresses the difficulty of managing first-round interviews manually for many candidates.</li>
+      <li><b>To study the existing process:</b> The project examines how interview scheduling, questioning, and evaluation are usually handled manually.</li>
+      <li><b>To build a guided interview system:</b> The system uses interviewer avatar media, browser speech, subtitles, timers, and video recording.</li>
+      <li><b>To generate smart questions:</b> Questions are created from the job description and can be personalized further using candidate resume details.</li>
+      <li><b>To automate assessment:</b> The platform scores candidate responses using structured AI analysis and local fallback heuristics.</li>
+      <li><b>To support integrity review:</b> The system records phone detection and related signals during the interview for later human review.</li>
+      <li><b>To maintain useful records:</b> The system stores sessions, candidates, transcripts, scores, and summaries in a structured manner.</li>
+      <li><b>To understand SDLC phases:</b> The assignment shows planning, requirement analysis, design, implementation, and testing in sequence.</li>
+    </ul>
+
+    <h2>Project Scope</h2>
+    <ul>
+      <li>The system allows interviewers to create interview sessions with title, description, questions, time limits, weights, and evaluation criteria.</li>
+      <li>The system allows AI-based generation of interview questions from a job description.</li>
+      <li>The system allows candidates to register through a shared link and optionally upload resume information for personalization.</li>
+      <li>The system conducts an interview through avatar playback, speech synthesis, speech recognition, and video or audio recording.</li>
+      <li>The system analyzes candidate answers using AI or local fallback logic and generates summaries and rankings.</li>
+      <li>The system supports integrity event tracking such as phone-detection review signals.</li>
+      <li>The first version does not include enterprise authentication, online payments, or live multi-interviewer video conferencing.</li>
+    </ul>
+  </section>
+
+  <section class="page">
+    <h2>Phase 1: Problem Definition and Planning</h2>
+    <h3>Problem Statement</h3>
+    <p>
+      In traditional recruitment, interviewers spend significant time repeating the same introductory questions for many candidates. Shortlisting becomes slow, candidate evaluation may differ from one interviewer to another, and remote interviews are difficult to monitor consistently. A browser-based AI Interview Platform can reduce repeated manual effort by providing a reusable interview workflow, structured evaluation criteria, and digital records of every candidate response.
+    </p>
+
+    <h3>System Objectives</h3>
+    <ul>
+      <li>To reduce manual first-round interview effort.</li>
+      <li>To maintain consistent interview questions and scoring logic.</li>
+      <li>To support candidate-specific question personalization from resumes.</li>
+      <li>To capture transcripts, recordings, and evaluation summaries.</li>
+      <li>To provide interviewer dashboards for ranking and review.</li>
+      <li>To keep the system usable even when external AI services fail.</li>
+    </ul>
+
+    <h3>User Roles</h3>
+    <table>
+      <tr>
+        <th>User Role</th>
+        <th>Main Work</th>
+      </tr>
+      <tr>
+        <td>Interviewer / HR</td>
+        <td>Creates sessions, uploads avatar media, defines criteria, shares interview links, and reviews results.</td>
+      </tr>
+      <tr>
+        <td>Candidate</td>
+        <td>Registers through the interview link, uploads resume details, gives consent, and completes the interview.</td>
+      </tr>
+      <tr>
+        <td>AI Analysis Service</td>
+        <td>Generates questions, extracts resume insights, and scores responses using structured JSON output.</td>
+      </tr>
+      <tr>
+        <td>Storage Layer</td>
+        <td>Stores sessions and candidate data using MongoDB, JSON fallback, and browser local storage.</td>
+      </tr>
+    </table>
+
+    <h3>Lifecycle Model</h3>
+    <p>
+      For this project, the Waterfall model is a suitable academic model because the work can be explained phase by phase. The project starts with problem definition and planning, then requirements are studied, then diagrams are prepared, after that implementation is performed, and finally testing and evaluation are carried out.
+    </p>
+
+    <div class="flowchart">
+      <div class="box">Problem Definition</div>
+      <span class="arrow">-&gt;</span>
+      <div class="box">Planning</div>
+      <span class="arrow">-&gt;</span>
+      <div class="box">Requirement Study</div>
+      <span class="arrow">-&gt;</span>
+      <div class="box">Design</div>
+      <span class="arrow">-&gt;</span>
+      <div class="box">Implementation & Testing</div>
+    </div>
+  </section>
+
+  <section class="page">
+    <h2>Phase 2: Requirement Analysis (SRS)</h2>
+    <h3>Functional Requirements</h3>
+    <ul>
+      <li>The system should allow the interviewer to create, update, and manage interview sessions.</li>
+      <li>The system should allow question generation from a job description.</li>
+      <li>The system should allow manual editing of generated questions and criteria.</li>
+      <li>The system should allow the candidate to register through a unique interview link.</li>
+      <li>The system should optionally analyze resume information and create candidate-specific questions.</li>
+      <li>The system should conduct the interview using avatar playback, text-to-speech, and speech recognition.</li>
+      <li>The system should record candidate response media and transcripts.</li>
+      <li>The system should analyze each answer and return relevance, accuracy, confidence, keyword match, strengths, and improvements.</li>
+      <li>The system should generate interview summaries and candidate rankings.</li>
+      <li>The system should store integrity events and compute an integrity score for human review.</li>
+    </ul>
+
+    <h3>Non-Functional Requirements</h3>
+    <ul>
+      <li><b>Performance:</b> Question loading, candidate registration, and result viewing should be fast enough for normal browser usage.</li>
+      <li><b>Usability:</b> The interface should be simple for both interviewer and candidate.</li>
+      <li><b>Reliability:</b> Sessions and candidate records should remain available through storage fallback options.</li>
+      <li><b>Security:</b> Sensitive configuration such as API keys must remain on the backend side.</li>
+      <li><b>Scalability:</b> Serverless API design should support growth in candidates and sessions.</li>
+      <li><b>Maintainability:</b> The system should be modular so services, pages, and endpoints can be improved independently.</li>
+    </ul>
+
+    <h3>SRS Purpose</h3>
+    <p>
+      The Software Requirement Specification helps define what the system must do before coding. It acts as a clear reference for the interviewer workflow, candidate workflow, AI integration, data storage, and testing goals. By preparing requirements in advance, the project becomes easier to design and implement in a structured way.
+    </p>
+  </section>
+
+  <section class="page">
+    <h2>Phase 3: System Design and Modeling</h2>
+    <h3>System Architecture Diagram</h3>
+    <div class="flowchart">
+      <div class="box box-wide">Interviewer Portal</div>
+      <span class="arrow">-&gt;</span>
+      <div class="box box-wide">API & AI Layer</div>
+      <span class="arrow">-&gt;</span>
+      <div class="box box-wide">Candidate Interview Room</div>
+      <span class="arrow">-&gt;</span>
+      <div class="box box-wide">Results & Ranking Dashboard</div>
+    </div>
+    <p class="diagram-note">
+      The interviewer portal handles session creation, avatar setup, and link sharing. The API and AI layer includes question generation, resume analysis, response scoring, and integrity event processing. The candidate interview room handles registration, question playback, transcript capture, and video recording. The results dashboard shows summaries, rankings, and stored responses.
+    </p>
+
+    <h3>Workflow Diagram</h3>
+    <div class="flowchart">
+      <div class="box box-small">Create Session</div>
+      <span class="arrow">-&gt;</span>
+      <div class="box box-small">Generate Questions</div>
+      <span class="arrow">-&gt;</span>
+      <div class="box box-small">Share Link</div>
+      <span class="arrow">-&gt;</span>
+      <div class="box box-small">Candidate Registers</div>
+      <span class="arrow">-&gt;</span>
+      <div class="box box-small">Interview Conducted</div>
+      <span class="arrow">-&gt;</span>
+      <div class="box box-small">Analyze & Rank</div>
+    </div>
+    <p>
+      In this workflow, the interviewer first prepares the interview session. Then questions are generated or edited, the interview link is shared, the candidate registers, the interview takes place through the browser, and finally results are analyzed and ranked for review.
+    </p>
+
+    <h3>Use Case Diagram Description</h3>
+    <table>
+      <tr>
+        <th>Actor</th>
+        <th>Main Use Cases</th>
+      </tr>
+      <tr>
+        <td>Interviewer / HR</td>
+        <td>Create session, configure avatar, generate questions, share link, view candidates, review scores, rank candidates.</td>
+      </tr>
+      <tr>
+        <td>Candidate</td>
+        <td>Open interview link, register, upload resume details, give integrity consent, answer questions, submit interview.</td>
+      </tr>
+      <tr>
+        <td>AI Service</td>
+        <td>Generate questions, analyze resume, score responses, create evidence summaries.</td>
+      </tr>
+      <tr>
+        <td>Integrity Service</td>
+        <td>Accept event batches, recheck signals, and return review events.</td>
+      </tr>
+    </table>
+  </section>
+
+  <section class="page">
+    <h2>Design Details and Diagrams</h2>
+    <h3>Use Case Diagram (Text Form)</h3>
+    <div class="flowchart">
+      <div class="box">Interviewer</div>
+      <span class="arrow">-&gt;</span>
+      <div class="box">Create / Manage Session</div>
+      <span class="arrow">-&gt;</span>
+      <div class="box">View Results</div>
+    </div>
+    <div class="flowchart">
+      <div class="box">Candidate</div>
+      <span class="arrow">-&gt;</span>
+      <div class="box">Register & Attend Interview</div>
+      <span class="arrow">-&gt;</span>
+      <div class="box">Submit Responses</div>
+    </div>
+    <div class="flowchart">
+      <div class="box">AI Engine</div>
+      <span class="arrow">-&gt;</span>
+      <div class="box">Generate / Analyze / Score</div>
+    </div>
+
+    <h3>Major Components</h3>
+    <table>
+      <tr>
+        <th>Component</th>
+        <th>Responsibility</th>
+      </tr>
+      <tr>
+        <td>Interviewer Pages</td>
+        <td>Dashboard, session management, avatar training, settings, and candidate review.</td>
+      </tr>
+      <tr>
+        <td>Candidate Pages</td>
+        <td>Registration, interview room, completion summary, and consent flow.</td>
+      </tr>
+      <tr>
+        <td>AI Services</td>
+        <td>Question generation, resume analysis, response scoring, interview summary, and ranking.</td>
+      </tr>
+      <tr>
+        <td>Media Services</td>
+        <td>Speech synthesis, speech recognition, media recording, and stream handling.</td>
+      </tr>
+      <tr>
+        <td>Integrity Services</td>
+        <td>Client event capture, score calculation, and server-side event reverification.</td>
+      </tr>
+      <tr>
+        <td>Backend APIs</td>
+        <td>Endpoints for sessions, candidates, questions, resume analysis, response analysis, and integrity events.</td>
+      </tr>
+    </table>
+
+    <h3>Class and Data Description</h3>
+    <table>
+      <tr>
+        <th>Entity</th>
+        <th>Main Data</th>
+        <th>Purpose</th>
+      </tr>
+      <tr>
+        <td>Session</td>
+        <td>title, description, questions, settings, avatarConfig, interviewerId, link</td>
+        <td>Stores the interview structure created by the interviewer.</td>
+      </tr>
+      <tr>
+        <td>Candidate</td>
+        <td>name, email, sessionId, responses, overallScore, resumeInsights, integrityConsent</td>
+        <td>Stores candidate identity and interview result details.</td>
+      </tr>
+      <tr>
+        <td>Question</td>
+        <td>text, type, timeLimit, weight, expectedKeywords, evaluationCriteria</td>
+        <td>Represents one interview question and its scoring context.</td>
+      </tr>
+      <tr>
+        <td>Analysis Result</td>
+        <td>relevance, accuracy, confidence, keywordMatch, strengths, improvements</td>
+        <td>Stores the scoring output for each answer.</td>
+      </tr>
+    </table>
+  </section>
+
+  <section class="page">
+    <h2>Algorithms Used in This Project</h2>
+    <h3>1. AI Question Generation Algorithm</h3>
+    <p>
+      The project generates interview questions from a job description using an API endpoint. If the AI service is available, the backend sends the job description to the model and receives structured questions. If the AI service fails, a local fallback algorithm extracts role title, skill keywords, and responsibility hints from the text, then creates question templates around those detected skills.
+    </p>
+
+    <h3>2. Resume Personalization Algorithm</h3>
+    <p>
+      The project analyzes the resume to extract skills, projects, and resume-specific questions. In fallback mode, the local algorithm searches for known technologies such as React, Node.js, SQL, AWS, and similar keywords. It also scans lines that look like project descriptions and then builds personalized questions from those detected skills and projects.
+    </p>
+
+    <h3>3. Response Scoring Algorithm</h3>
+    <p>
+      The main scoring formula combines multiple factors:
+    </p>
+    <p class="center"><b>Overall Score = (0.25 x Relevance) + (0.30 x Accuracy) + (0.20 x Confidence) + (0.25 x Keyword Match)</b></p>
+    <p>
+      The result is then adjusted using question weight. If server-side AI scoring is available, the backend returns structured analysis. If not, the local algorithm calculates keyword match from expected keywords, confidence from positive and negative speaking indicators, relevance from overlap between question words and answer words, and accuracy from a combination of relevance and keyword match.
+    </p>
+
+    <h3>4. Candidate Ranking Algorithm</h3>
+    <p>
+      Candidate ranking is based on overall score. The ranking function sorts candidates in descending order and assigns rank 1 to the highest score, rank 2 to the next candidate, and so on. This allows the interviewer to review the best performing candidates first.
+    </p>
+
+    <h3>5. Integrity Score Algorithm</h3>
+    <p>
+      The integrity module groups captured events and applies weighted penalties. Different event types such as phone detection, gaze anomaly, audio anomaly, and tamper suspicion are multiplied by separate weights. The final score is calculated as 100 minus total weighted risk. This means more suspicious events reduce the integrity score, but the result is still used only for human review rather than automatic rejection.
+    </p>
+
+    <h3>6. Server Reverification Algorithm</h3>
+    <p>
+      The server receives sampled integrity frames and checks whether a frame looks like a valid phone detection event with enough confidence and a bounding box. It then returns additional server-side review events. If the server detects more phone events than the client reported, the discrepancy contributes to tamper suspicion in the final integrity score.
+    </p>
+  </section>
+
+  <section class="page">
+    <h2>Phase 4: Implementation and Testing</h2>
+    <h3>Implementation</h3>
+    <p>
+      In the implementation phase, the design is converted into actual code. This project uses React and Vite for the frontend, JavaScript services for media and AI utilities, Node-based backend APIs for server logic, and MongoDB or JSON storage for persistence. The application supports both local development and deployable API routes.
+    </p>
+    <ul>
+      <li>The interviewer module was created for dashboard, avatar training, session creation, and candidate review.</li>
+      <li>The candidate module was created for registration, interview participation, and completion summary.</li>
+      <li>The AI module was created for question generation, resume analysis, response scoring, summary generation, and ranking.</li>
+      <li>The media module was created for speech synthesis, speech recognition, and recording support.</li>
+      <li>The integrity module was created for event capture, event upload, and integrity score computation.</li>
+    </ul>
+
+    <h3>Testing</h3>
+    <p>
+      Testing is done to verify that the system works according to the requirements. Both functional behavior and fallback behavior are important in this project because many features depend on browser APIs and backend AI services.
+    </p>
+    <table>
+      <tr>
+        <th>Test Case</th>
+        <th>Expected Result</th>
+      </tr>
+      <tr>
+        <td>Create a new interview session with valid inputs</td>
+        <td>The session should be saved successfully and appear in the interviewer dashboard.</td>
+      </tr>
+      <tr>
+        <td>Generate questions from a job description</td>
+        <td>The system should return role-specific interview questions.</td>
+      </tr>
+      <tr>
+        <td>Register a candidate through the shared link</td>
+        <td>The candidate should be stored and moved to the interview flow.</td>
+      </tr>
+      <tr>
+        <td>Submit an answer during the interview</td>
+        <td>The answer should be analyzed and stored with score details.</td>
+      </tr>
+      <tr>
+        <td>Trigger fallback mode by AI failure</td>
+        <td>The system should still generate questions or score answers through local heuristics.</td>
+      </tr>
+      <tr>
+        <td>Upload integrity events</td>
+        <td>The system should process events and return server-side reverification output.</td>
+      </tr>
+    </table>
+
+    <h3>Conclusion</h3>
+    <p>
+      The AI Interview Platform project helps to understand all important phases of software development in a practical and modern context. It begins with problem definition and planning, then requirement analysis is performed, then architecture and workflow diagrams are prepared, and finally implementation and testing are carried out. By following SDLC phases, the project becomes more organized, consistent, and reliable.
+    </p>
+    <p>
+      This assignment also shows that software engineering is not limited to coding only. Requirement study, diagram design, algorithm selection, data handling, fallback planning, and testing are equally important for building a successful software product.
+    </p>
+  </section>
+</body>
+</html>
