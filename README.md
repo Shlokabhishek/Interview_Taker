@@ -9,7 +9,7 @@ A comprehensive AI-powered interview platform built with React, Vite, and Tailwi
 - **Session Management**: Create and manage interview sessions with custom questions
 - **Candidate Tracking**: View all candidates with AI-analyzed scores and rankings
 - **Dashboard**: Real-time insights and statistics on interview performance
-- **Settings**: Manage profile, security, and notification preferences
+- **Settings**: Manage the local interviewer profile, share links, backend URL, and notification preferences
 
 ### Candidate Portal
 - **Easy Registration**: Join interviews via unique links
@@ -52,11 +52,11 @@ npm install
 cp .env.example .env
 ```
 
-Set these required values:
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
+Set these values as needed:
 - `MONGODB_URI`
 - `MONGODB_DB` (optional, defaults to `ai_interview_platform`)
+- `OPENAI_API_KEY` (required for AI question generation and scoring)
+- `OPENAI_MODEL` (optional, defaults to `gpt-5.6-luna`)
 
 4. Start the development server:
 ```bash
@@ -67,7 +67,7 @@ npm run dev
 
 ### Optional Backend (Cross-Device Results)
 
-By default, development can still run without backend persistence, but for cross-device results and shareable links you should run the backend with MongoDB configured.
+By default, development can still run without backend persistence, but AI generation/scoring and cross-device results require the backend.
 
 To make sessions/candidates available across devices, run the included lightweight backend:
 
@@ -75,16 +75,35 @@ To make sessions/candidates available across devices, run the included lightweig
 npm run dev:backend
 ```
 
+For LAN testing, start the frontend in auto-LAN mode (detects your machine IP and configures base URLs automatically):
+
+```bash
+npm run dev:lan
+```
+
+Or start backend + frontend together in one command:
+
+```bash
+npm run dev:lan:all
+```
+
 Then set the backend URL in the app:
 - Go to `Interviewer -> Settings`
 - Set `Backend API URL (Optional)` to `http://<your-ip>:8787`
 
 For sharing interview links on LAN, set:
-- `Public Base URL (Share Links)` to `https://<your-ip>:3001` (or your deployed domain)
+- `Public Base URL (Share Links)` to `http://<your-ip>:3001` (or your deployed domain)
+
+Notes for LAN mode:
+- `npm run dev:lan` sets `VITE_API_BASE_URL` to `http://<detected-ip>:8787`
+- `npm run dev:lan` sets `VITE_PUBLIC_BASE_URL` to `http://<detected-ip>:3001`
+- `.env.lan.example` is included for manual overrides if you need a fixed IP profile
 
 ### Vercel Deployment Notes
 
 This repo includes Vercel Serverless Functions under `api/` for sessions/candidates. For persistence on Vercel, add a MongoDB connection string as `MONGODB_URI` (and optional `MONGODB_DB`) in your Vercel project environment variables.
+
+For AI features on Vercel, also add `OPENAI_API_KEY` and optionally `OPENAI_MODEL`.
 
 If you previously set `Backend API URL (Optional)` to `http://localhost:8787` (or similar) during local development, clear it before using the deployed site; otherwise sessions will never reach the deployed `/api` and candidates may see **Interview Not Found**.
 
@@ -108,12 +127,9 @@ src/
 │       ├── Modal.jsx
 │       └── ...
 ├── contexts/          # React context providers
-│   ├── AuthContext.jsx
+│   ├── AuthContext.jsx    # Local no-auth interviewer profile
 │   └── InterviewContext.jsx
 ├── pages/
-│   ├── auth/          # Authentication pages
-│   │   ├── Login.jsx
-│   │   └── Register.jsx
 │   ├── candidate/     # Candidate portal pages
 │   │   ├── CandidateRegistration.jsx
 │   │   ├── InterviewRoom.jsx
@@ -127,21 +143,35 @@ src/
 │       ├── AvatarTraining.jsx
 │       ├── Candidates.jsx
 │       └── Settings.jsx
-├── utils/             # Utility functions
-│   ├── helpers.js
-│   ├── aiAnalysis.js
-│   └── mediaUtils.js
+├── services/          # App, AI, media, and question services
+│   ├── app.js
+│   ├── ai.js
+│   ├── media.js
+│   └── questions.js
 ├── App.jsx            # Main application with routing
 ├── main.jsx           # Entry point
 └── index.css          # Global styles with Tailwind
 ```
 
+Generated and supporting artifacts are kept outside the runtime entrypoint:
+
+- `docs/` - SRS files, templates, project analysis, and Mermaid documentation
+- `presentations/` - generated PowerPoint presentations
+- `html files/` - standalone presentation and flowchart HTML artifacts
+- `python scripts/` - diagram, presentation, and document generation tools
+- `scripts/` - JavaScript development launchers
+
 ## Available Scripts
 
 - `npm run dev` - Start development server
+- `npm run dev:lan` - Start development server with auto-detected LAN IP base URLs
+- `npm run dev:lan:all` - Start backend and LAN frontend together
+- `npm run dev all` - Alias behavior that also starts backend and LAN frontend together
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build
 - `npm run lint` - Run ESLint
+
+When using `npm run dev:lan:all` (or `npm run dev all`), if `8787` or `3001` is already occupied, the launcher automatically picks the next free ports and prints the exact URLs to open.
 
 ## Deployment
 
@@ -163,7 +193,7 @@ The `vercel.json` file is already configured with:
 
 ### For Interviewers/HR
 
-1. **Sign Up/Login**: Create an account or use demo credentials
+1. **Open Dashboard**: Use the local no-auth interviewer profile
 2. **Train Your Avatar**: Upload face images and record voice samples
 3. **Create Session**: Add interview questions with evaluation criteria
 4. **Share Link**: Send the unique interview link to candidates
@@ -179,12 +209,13 @@ The `vercel.json` file is already configured with:
 
 ## AI Analysis
 
-The platform uses several metrics to evaluate candidate responses:
+The platform sends each candidate answer to the server-side AI analysis endpoint and evaluates it against the question, expected keywords, and interviewer criteria. The response includes:
 
 - **Relevance Score**: How well the answer addresses the question
 - **Keyword Matching**: Detection of expected keywords and concepts
-- **Confidence Analysis**: Based on speech patterns and delivery
-- **Technical Accuracy**: For domain-specific questions
+- **Confidence Analysis**: Clarity, specificity, and credible ownership in the answer
+- **Technical Accuracy**: Practical correctness for domain-specific questions
+- **Strengths and Improvements**: Short evidence-based review notes
 
 ## Browser Support
 
@@ -221,3 +252,5 @@ For support, please open an issue on GitHub or contact the development team.
 ---
 
 Built with ❤️ for modern hiring teams
+#   A I - I n t e r v i e w - p l a t f o r m  
+ 
